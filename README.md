@@ -1,8 +1,8 @@
 # OpenDesktop
 
-> Cloud Desktop Infrastructure & Sandbox Platform for Autonomous AI Agents
+> Cloud Desktop Infrastructure & Container Sandbox Engine for Autonomous AI Agents
 
-OpenDesktop is a provider-agnostic digital employee OS and cloud sandbox platform. It provisions persistent, containerized Linux desktop environments reachable via REST APIs, WebSockets, and a Python SDK, enabling vision-capable AI agents to interact with graphical desktop software, web browsers, and local development tools.
+OpenDesktop is an open-source, provider-agnostic container sandbox platform and digital employee OS. It provisions isolated Linux desktop environments reachable via REST APIs, WebSockets, and a Python SDK, enabling vision-capable AI models to observe and control graphical software, web browsers, and local development environments.
 
 ---
 
@@ -44,25 +44,35 @@ OpenDesktop is a provider-agnostic digital employee OS and cloud sandbox platfor
 
 ---
 
-## Core Capabilities
+## Technical Capabilities
 
-- **Isolated Linux Sandboxes**: Provision headless virtual framebuffers (Xvfb 1280x800) with XFCE4 desktop environments, Google Chrome, VS Code, Obsidian, and standard Linux toolchains in isolated Docker containers.
-- **Provider-Agnostic Vision Loop**: Vision-driven LLM control loop (Observe -> Think -> Act) supporting OpenRouter, OpenAI (GPT-4o), Anthropic (Claude 3.5 Sonnet), and Google Gemini.
-- **Low-Latency Telemetry Streaming**: Stream real-time desktop frame buffers to connected clients via WebSockets (`ws://localhost:8000/ws/stream/{machine_id}`).
-- **Declarative Playbook Engine**: Orchestrate multi-step workflow campaigns across specialized machine roles (`ops_machine`, `rpa_machine`, `vault_machine`).
-- **Programmatic Control**: High-level Python SDK (`open_desktop`) for machine lifecycle management, navigation, form automation, and execution logging.
+- **Isolated Linux Sandboxes**: Headless virtual framebuffers (`Xvfb 1280x800x24`) with XFCE4 desktop environments, Google Chrome, VS Code, Obsidian, Node.js 20, and developer toolchains in isolated Docker containers.
+- **Provider-Agnostic Vision Loop**: Multimodal observe-think-act control loop supporting OpenRouter, OpenAI (GPT-4o), Anthropic (Claude 3.5 Sonnet), and Google Gemini.
+- **Low-Latency Telemetry Streaming**: Real-time JPEG screenshot stream over WebSockets (`ws://localhost:8000/ws/stream/{machine_id}`) and action event broadcasting (`ws://localhost:8000/ws/actions`).
+- **Declarative Playbook Engine**: Workflow orchestrator executing multi-agent campaigns across specialized machine roles (`ops_machine`, `rpa_machine`, `vault_machine`).
+- **Programmatic SDK Control**: Native Python SDK (`open_desktop`) for machine lifecycle management, URL navigation, form filling, screenshot capture, and vault synchronization.
 
 ---
 
-## Quickstart
+## Installation & Deployment
 
-### 1. Requirements
+### 1. Prerequisites
 
 - Python 3.10+
-- Docker (on host or remote Linux VPS)
-- SSH access to Docker host (if running remote deployment)
+- Docker (Local host or remote Linux VPS)
+- SSH access to Docker host (if deploying remotely)
 
-### 2. Launch Server
+### 2. Environment Setup
+
+Copy `.env.example` or set environment variables:
+
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-..."
+export OPENAI_API_KEY="sk-proj-..."
+export HETZNER_HOST="46.225.66.39"  # Or local Docker daemon
+```
+
+### 3. Launch Backend Engine
 
 ```bash
 git clone https://github.com/totalaudiopromo/open-desktop.git
@@ -73,11 +83,11 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r server/requirements.txt
 
-# Start FastAPI Engine
+# Start FastAPI Server
 uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Launch Frontend Client
+### 4. Launch Web Dashboard Client
 
 ```bash
 cd client
@@ -93,13 +103,13 @@ Access the dashboard at `http://localhost:8888`.
 ```python
 import open_desktop
 
-# Initialize machine handle
+# Connect to cloud desktop sandbox
 machine = open_desktop.Machine("mach_01", api_key="sk_live_opendesktop_...")
 session = open_desktop.Session(machine, job_name="Market Research Campaign")
 
 # High-level automation methods
 session.open_url("https://www.google.com")
-session.fill_form({"q": "OpenDesktop Sandbox Infrastructure"})
+session.fill_form({"q": "OpenDesktop Infrastructure"})
 session.run_playbook("pb_web_research", prompt="Analyze competitive landscape")
 
 session.finish()
@@ -107,9 +117,9 @@ session.finish()
 
 ---
 
-## API Reference
+## REST & WebSocket API Specification
 
-### Create Sandbox Machine
+### Provision Machine Sandbox
 
 ```http
 POST /api/v1/machines
@@ -121,7 +131,7 @@ Content-Type: application/json
 }
 ```
 
-### Run Declarative Playbook Campaign
+### Execute Declarative Fleet Campaign
 
 ```http
 POST /api/v1/playbooks/run
@@ -129,16 +139,26 @@ Content-Type: application/json
 
 {
   "playbook_id": "pb_web_research",
-  "prompt": "Research 10 market competitors and export structured markdown to Obsidian Vault"
+  "prompt": "Research market competitors and export structured markdown to Obsidian Vault"
 }
 ```
 
-### Stream Telemetry & Screenshots
+### Dynamic API Key Update
 
 ```http
-GET /api/v1/machines/{machine_id}/screenshot
-WS  /ws/stream/{machine_id}
-WS  /ws/actions
+POST /api/v1/keys/set
+Content-Type: application/json
+
+{
+  "api_key": "sk-or-v1-..."
+}
+```
+
+### WebSocket Streaming Endpoints
+
+```
+WS /ws/stream/{machine_id}   # Base64 JPEG frame stream
+WS /ws/actions               # Real-time action telemetry feed
 ```
 
 ---
@@ -148,9 +168,9 @@ WS  /ws/actions
 ```
 open-desktop/
 ├── client/                     # Web dashboard frontend (HTML/CSS/JS)
-│   ├── app.js                  # WebSocket client & DOM manager
-│   ├── index.html              # Operator & Developer UI
-│   └── styles.css              # Design system & responsive layout
+│   ├── app.js                  # WebSocket stream manager & DOM renderer
+│   ├── index.html              # Operator & Developer console UI
+│   └── styles.css              # Dark mode design system & responsive grid
 ├── server/                     # FastAPI engine & orchestrator
 │   ├── agent_runner.py         # LLM vision observe-think-act loop
 │   ├── docker_manager.py       # Remote Docker lifecycle & SSH manager
@@ -163,7 +183,7 @@ open-desktop/
 ├── open_desktop/               # Python SDK package
 │   └── machine.py              # Client SDK implementation
 ├── playbooks/                  # Declarative workflow JSON definitions
-├── docs/                       # Architecture documentation
+├── docs/                       # System architecture documentation
 └── docker-compose.yml          # Local container orchestration spec
 ```
 
