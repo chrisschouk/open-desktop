@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "playbook_id": "pb_data_entry_rpa",
+  "name": "Cross-App Data Entry & RPA Automation",
+  "description": "Transfers data and automates form submission across web applications that lack native REST APIs.",
+  "category": "generic",
+  "templates_required": {
+    "cmp_hubert": "orchestrator_template",
+    "cmp_research": "rpa_machine",
+    "cmp_signup": "ops_machine",
+    "cmp_obsidian": "vault_machine"
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "machine": "cmp_hubert",
+      "action": "orchestrate",
+      "description": "Hubert Master initializes Data Entry RPA campaign."
+    },
+    {
+      "step": 2,
+      "machine": "cmp_research",
+      "action": "form_fill",
+      "description": "RPA Agent executes browser form entry and data transfer."
+    },
+    {
+      "step": 3,
+      "machine": "cmp_obsidian",
+      "action": "vault_sync",
+      "description": "Obsidian Agent logs execution records to Vault."
+    }
+  ]
+}

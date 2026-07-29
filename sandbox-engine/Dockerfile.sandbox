@@ -1,0 +1,98 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:1
+ENV PYTHONUNBUFFERED=1
+
+# 1. Base System, XFCE4, Utilities, Fonts, Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    xfce4 \
+    xfce4-terminal \
+    dbus-x11 \
+    x11vnc \
+    websockify \
+    novnc \
+    python3 \
+    python3-pip \
+    python3-tk \
+    python3-dev \
+    scrot \
+    xdotool \
+    curl \
+    wget \
+    git \
+    nano \
+    ca-certificates \
+    fonts-liberation \
+    fonts-dejavu \
+    fonts-noto-color-emoji \
+    net-tools \
+    gnupg \
+    build-essential \
+    libgbm1 \
+    libnss3 \
+    libasound2 \
+    libx11-xcb1 \
+    libxcb-dri3-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Node.js 20 LTS & Global CLI Tools (Claude Code, etc.)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g @anthropic-ai/claude-code typescript ts-node && \
+    rm -rf /var/lib/apt/lists/*
+
+# 3. Google Chrome
+RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends /tmp/chrome.deb && \
+    rm /tmp/chrome.deb && \
+    rm -rf /var/lib/apt/lists/*
+
+# 4. VS Code
+RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/packages.microsoft.gpg && \
+    echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends code && \
+    rm -rf /var/lib/apt/lists/*
+
+# 5. Obsidian Vault & Desktop App
+RUN wget -q -O /tmp/obsidian.deb https://github.com/obsidianmd/obsidian-releases/releases/download/v1.5.12/obsidian_1.5.12_amd64.deb && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends /tmp/obsidian.deb || apt-get install -f -y && \
+    rm -f /tmp/obsidian.deb && \
+    rm -rf /var/lib/apt/lists/*
+
+# 6. Setup Agent User & Workspace
+RUN useradd -m -s /bin/bash agent && \
+    mkdir -p /home/agent/Desktop /home/agent/ObsidianVault /home/agent/Projects /app && \
+    chown -R agent:agent /home/agent /app
+
+# 7. Clone Hermes Desktop & Orgo Desktop Plugin templates
+RUN git clone https://github.com/nickvasilescu/orgo-template-hermes-desktop /home/agent/Projects/hermes-desktop || true && \
+    git clone https://github.com/nickvasilescu/hermes-orgo-desktop-plugin /home/agent/Projects/hermes-orgo-plugin || true && \
+    chown -R agent:agent /home/agent/Projects
+
+# 8. Create Desktop Launchers (.desktop files) on /home/agent/Desktop
+RUN echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Google Chrome\nExec=google-chrome-stable --no-sandbox --disable-gpu %U\nIcon=google-chrome\nTerminal=false\nCategories=Network;WebBrowser;' > /home/agent/Desktop/Google-Chrome.desktop && \
+    echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=VS Code\nExec=code --no-sandbox --user-data-dir=/home/agent/.vscode-data %F\nIcon=vscode\nTerminal=false\nCategories=Development;IDE;' > /home/agent/Desktop/VS-Code.desktop && \
+    echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Obsidian\nExec=obsidian --no-sandbox /home/agent/ObsidianVault %U\nIcon=obsidian\nTerminal=false\nCategories=Office;' > /home/agent/Desktop/Obsidian.desktop && \
+    echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Terminal\nExec=xfce4-terminal\nIcon=utilities-terminal\nTerminal=false\nCategories=System;' > /home/agent/Desktop/Terminal.desktop && \
+    echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Hermes Desktop\nExec=xfce4-terminal --working-directory=/home/agent/Projects/hermes-desktop\nIcon=system-run\nTerminal=false\nCategories=Development;' > /home/agent/Desktop/Hermes-Desktop.desktop && \
+    chmod +x /home/agent/Desktop/*.desktop && \
+    chown -R agent:agent /home/agent/Desktop
+
+WORKDIR /app
+
+# Copy Python dependencies & Agent Control Daemon
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY agent_daemon.py /app/agent_daemon.py
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 6080 5900 8000
+
+CMD ["/app/entrypoint.sh"]

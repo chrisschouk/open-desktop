@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "playbook_id": "pb_saas_signup_vault",
+  "name": "Automated SaaS Onboarding & Obsidian Vault Logging",
+  "description": "Automates account registration across target SaaS services, verifies email sign-ups, and logs credentials & API keys to Obsidian Vault.",
+  "category": "saas_onboarding",
+  "templates_required": {
+    "cmp_hubert": "orchestrator_template",
+    "cmp_research": "research_machine",
+    "cmp_signup": "signup_machine",
+    "cmp_obsidian": "vault_machine"
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "machine": "cmp_hubert",
+      "action": "orchestrate",
+      "description": "Hubert Master initializes SaaS Onboarding playbook."
+    },
+    {
+      "step": 2,
+      "machine": "cmp_signup",
+      "action": "form_fill",
+      "description": "Sign-Up Agent completes registration form, types passwords, and verifies email."
+    },
+    {
+      "step": 3,
+      "machine": "cmp_obsidian",
+      "action": "vault_sync",
+      "description": "Obsidian Agent writes login credentials and API keys to Credentials.md inside Obsidian Vault."
+    }
+  ]
+}

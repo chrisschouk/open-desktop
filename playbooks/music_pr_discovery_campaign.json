@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "playbook_id": "pb_music_pr_discovery",
+  "name": "Total Audio Promo (TAP) - Music PR & Radio Show Discovery",
+  "description": "Orchestrates a 4-machine fleet to discover UK radio shows, extract producer contacts, sign up for station press portals, and write pitch reports to Obsidian Vault.",
+  "category": "music_pr_automation",
+  "templates_required": {
+    "cmp_hubert": "orchestrator_template",
+    "cmp_research": "research_machine",
+    "cmp_signup": "signup_machine",
+    "cmp_obsidian": "vault_machine"
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "machine": "cmp_hubert",
+      "action": "orchestrate",
+      "description": "Hubert Master initializes Radio Discovery campaign for Total Audio Promo."
+    },
+    {
+      "step": 2,
+      "machine": "cmp_research",
+      "action": "browser_search",
+      "description": "Research Agent scans UK Radio stations (BBC Radio 6, Absolute Radio) and extracts producer contacts."
+    },
+    {
+      "step": 3,
+      "machine": "cmp_signup",
+      "action": "form_fill",
+      "description": "Sign-Up Agent submits radio pitch forms and registers press accounts."
+    },
+    {
+      "step": 4,
+      "machine": "cmp_obsidian",
+      "action": "vault_sync",
+      "description": "Obsidian Agent updates TAP Radio Play Tracking database & Obsidian Vault."
+    },
+    {
+      "step": 5,
+      "machine": "cmp_hubert",
+      "action": "notify",
+      "description": "Hubert Master sends campaign summary report to Discord/Telegram channel."
+    }
+  ]
+}

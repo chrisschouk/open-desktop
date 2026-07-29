@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "playbook_id": "pb_web_research",
+  "name": "Generic Web Research & Intelligence Synthesis",
+  "description": "Multi-machine research playbook that searches target companies, products, or founders across web browsers, extracts structured insights, and generates an Obsidian report.",
+  "category": "generic",
+  "templates_required": {
+    "cmp_hubert": "orchestrator_template",
+    "cmp_research": "research_machine",
+    "cmp_signup": "ops_machine",
+    "cmp_obsidian": "vault_machine"
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "machine": "cmp_hubert",
+      "action": "orchestrate",
+      "description": "Hubert Master initializes Web Research campaign."
+    },
+    {
+      "step": 2,
+      "machine": "cmp_research",
+      "action": "browser_search",
+      "description": "Research Agent scans target web sites and extracts key metrics & intelligence."
+    },
+    {
+      "step": 3,
+      "machine": "cmp_obsidian",
+      "action": "vault_sync",
+      "description": "Obsidian Agent writes structured Markdown summary to Obsidian Vault."
+    },
+    {
+      "step": 4,
+      "machine": "cmp_hubert",
+      "action": "notify",
+      "description": "Hubert Master sends summary notification to Discord/Telegram channel."
+    }
+  ]
+}

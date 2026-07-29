@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # OpenOrgo Orchestrator & API Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: openorgo-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - LLM_API_ENDPOINT=${LLM_API_ENDPOINT:-https://openrouter.ai/api/v1/chat/completions}
+      - LLM_MODEL=${LLM_MODEL:-nousresearch/hermes-3-llama-3.1-405b}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+    restart: unless-stopped
+
+  # Default Computer Sandbox Node Container
+  sandbox-node-1:
+    build:
+      context: ./sandbox-engine
+      dockerfile: Dockerfile.sandbox
+    container_name: openorgo-sandbox-1
+    ports:
+      - "6080:6080" # noVNC WebSocket Stream
+      - "8000:8000" # Internal Agent Control Daemon
+    environment:
+      - SCREEN_WIDTH=1280
+      - SCREEN_HEIGHT=800
+    restart: unless-stopped
+
+  # Frontend Dashboard Web App
+  dashboard:
+    image: nginx:alpine
+    container_name: openorgo-dashboard
+    ports:
+      - "80:80"
+    volumes:
+      - ./client:/usr/share/nginx/html:ro
+    restart: unless-stopped

@@ -1,0 +1,43 @@
+{
+  "playbook_id": "pb_lead_gen_campaign",
+  "name": "Multi-Agent Lead Gen & Account Sign-Up Campaign",
+  "description": "Orchestrates 4 cloud machines to perform web research, SaaS account sign-up, Obsidian Vault report syncing, and Discord alert dispatch.",
+  "templates_required": {
+    "cmp_hubert": "orchestrator_template",
+    "cmp_research": "research_machine",
+    "cmp_signup": "signup_machine",
+    "cmp_obsidian": "vault_machine"
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "machine": "cmp_hubert",
+      "action": "orchestrate",
+      "description": "Hubert Master provisions fleet and parses user prompt keywords."
+    },
+    {
+      "step": 2,
+      "machine": "cmp_research",
+      "action": "browser_search",
+      "description": "Research Agent launches Chromium and extracts brand & founder intelligence."
+    },
+    {
+      "step": 3,
+      "machine": "cmp_signup",
+      "action": "form_fill",
+      "description": "Sign-Up Agent opens registration page, inputs credentials, and creates account."
+    },
+    {
+      "step": 4,
+      "machine": "cmp_obsidian",
+      "action": "vault_sync",
+      "description": "Obsidian Agent generates Markdown report file inside Obsidian Vault."
+    },
+    {
+      "step": 5,
+      "machine": "cmp_hubert",
+      "action": "notify",
+      "description": "Hubert Master dispatches completion alert to Discord/Telegram channel."
+    }
+  ]
+}
