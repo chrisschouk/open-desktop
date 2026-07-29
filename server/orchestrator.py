@@ -1,7 +1,7 @@
 """
 OpenDesktop - Orchestrator
 Coordinates multi-agent campaigns across fleet of sandbox machines.
-Uses the LLM agent runner for intelligent task execution.
+Uses the agent runner for task execution.
 """
 import os
 import asyncio
@@ -26,7 +26,7 @@ class FleetOrchestrator:
         prompt: str,
         broadcast_action: Optional[Callable] = None
     ):
-        """Run an LLM-driven agent on a single machine."""
+        """Run an agent task on a single machine."""
         result = await agent_runner.run_task(
             sandbox_id=machine_id,
             prompt=prompt,

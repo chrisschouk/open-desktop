@@ -9,7 +9,7 @@ OpenDesktop provides a fleet of isolated, containerized Linux desktop environmen
 ## 1. Core Architecture
 
 - **Persistent Desktop Sandboxes**: Full Linux userland environments with XFCE4, Google Chrome, VS Code, Obsidian, terminal tools, and local storage.
-- **Provider-Agnostic Engine**: Drive desktops using any vision-capable model provider (Anthropic Claude, OpenAI GPT-4, Google Gemini, OpenRouter).
+- **Provider-Agnostic Engine**: Drive desktops using vision-capable model providers via standard multimodal APIs.
 - **Multi-Machine Fleet Orchestration**: Declarative playbooks that coordinate specialized machine roles (`ops_machine`, `rpa_machine`, `vault_machine`).
 
 ---

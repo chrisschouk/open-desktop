@@ -48,12 +48,12 @@ Terminal=false
 Categories=Office;
 EOF
 
-cat << 'EOF' > /root/Desktop/Hermes-Desktop.desktop
+cat << 'EOF' > /root/Desktop/Projects-Workspace.desktop
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Hermes Desktop
-Exec=xfce4-terminal --working-directory=/home/agent/Projects/hermes-desktop
+Name=Projects Workspace
+Exec=xfce4-terminal --working-directory=/home/agent/Projects
 Icon=system-run
 Terminal=false
 Categories=Development;
@@ -88,7 +88,7 @@ echo "[OpenDesktop Sandbox] Starting Agent Control Daemon on port 8000..."
 python3 /app/agent_daemon.py &
 DAEMON_PID=$!
 
-echo "[OpenDesktop Sandbox] All services ready. Desktop sandbox is live with Chrome, VS Code, Obsidian, Hermes Desktop & Claude Code!"
+echo "[OpenDesktop Sandbox] All services ready. Desktop sandbox is live with Chrome, VS Code, Obsidian & Terminal!"
 
 # Keep container alive
 trap 'kill $XVFB_PID $XFCE_PID $DAEMON_PID 2>/dev/null; exit 0' SIGTERM SIGINT

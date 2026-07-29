@@ -1,6 +1,6 @@
 """
 OpenDesktop Engine - API Server
-Real sandbox management with WebSocket screenshot streaming and LLM-driven agents.
+Real sandbox management with WebSocket screenshot streaming and autonomous agents.
 """
 import os
 import asyncio
@@ -108,7 +108,7 @@ def ensure_streaming(machine_id: str):
 app = FastAPI(
     title="OpenDesktop Engine",
     version="2.0.0",
-    description="Real cloud desktops for AI agents. Powered by Docker + LLM vision.",
+    description="Cloud desktops for AI agents. Powered by Docker and computer control vision.",
 )
 
 app.add_middleware(
@@ -241,18 +241,13 @@ async def get_screenshot(machine_id: str):
     return Response(content=img_bytes, media_type="image/jpeg")
 
 
-class SetKeyRequest(BaseModel):
+class SetApiKeyRequest(BaseModel):
     api_key: str
 
 @app.post("/api/v1/keys/set")
-def set_api_key(req: SetKeyRequest):
+async def set_api_key(req: SetApiKeyRequest):
     key = req.api_key.strip()
-    if key.startswith("sk-or-"):
-        os.environ["OPENROUTER_API_KEY"] = key
-    elif key.startswith("sk-"):
-        os.environ["OPENAI_API_KEY"] = key
-    else:
-        os.environ["OPENROUTER_API_KEY"] = key
+    os.environ["VISION_API_KEY"] = key
     return {"status": "success", "message": "API key updated successfully!"}
 
 

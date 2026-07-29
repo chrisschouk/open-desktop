@@ -2,7 +2,7 @@
 
 > Cloud Desktop Infrastructure & Container Sandbox Engine for Autonomous AI Agents
 
-OpenDesktop is an open-source, provider-agnostic container sandbox platform and digital employee OS. It provisions isolated Linux desktop environments reachable via REST APIs, WebSockets, and a Python SDK, enabling vision-capable AI models to observe and control graphical software, web browsers, and local development environments.
+OpenDesktop is an open-source, provider-agnostic container sandbox platform and digital employee OS. It provisions isolated Linux desktop environments reachable via REST APIs, WebSockets, and a Python SDK, enabling vision-capable AI agents to observe and control graphical software, web browsers, and local development environments.
 
 ---
 
@@ -22,7 +22,7 @@ OpenDesktop is an open-source, provider-agnostic container sandbox platform and 
                       |     FastAPI Server (:8000)       |
                       | - Remote Sandbox Manager (SSH)   |
                       | - Fleet Orchestrator & Vision    |
-                      |   Agent Loop (OpenRouter/OpenAI) |
+                      |   Agent Control Loop             |
                       +----------------+-----------------+
                                        |
                      Container Lifecycle| HTTP REST & scrot
@@ -47,7 +47,7 @@ OpenDesktop is an open-source, provider-agnostic container sandbox platform and 
 ## Technical Capabilities
 
 - **Isolated Linux Sandboxes**: Headless virtual framebuffers (`Xvfb 1280x800x24`) with XFCE4 desktop environments, Google Chrome, VS Code, Obsidian, Node.js 20, and developer toolchains in isolated Docker containers.
-- **Provider-Agnostic Vision Loop**: Multimodal observe-think-act control loop supporting OpenRouter, OpenAI (GPT-4o), Anthropic (Claude 3.5 Sonnet), and Google Gemini.
+- **Provider-Agnostic Vision Loop**: Multimodal observe-think-act computer control loop supporting standard vision model providers.
 - **Low-Latency Telemetry Streaming**: Real-time JPEG screenshot stream over WebSockets (`ws://localhost:8000/ws/stream/{machine_id}`) and action event broadcasting (`ws://localhost:8000/ws/actions`).
 - **Declarative Playbook Engine**: Workflow orchestrator executing multi-agent campaigns across specialized machine roles (`ops_machine`, `rpa_machine`, `vault_machine`).
 - **Programmatic SDK Control**: Native Python SDK (`open_desktop`) for machine lifecycle management, URL navigation, form filling, screenshot capture, and vault synchronization.
@@ -64,11 +64,10 @@ OpenDesktop is an open-source, provider-agnostic container sandbox platform and 
 
 ### 2. Environment Setup
 
-Copy `.env.example` or set environment variables:
+Set environment variables for model access and infrastructure:
 
 ```bash
-export OPENROUTER_API_KEY="sk-or-v1-..."
-export OPENAI_API_KEY="sk-proj-..."
+export VISION_API_KEY="sk-..."
 export HETZNER_HOST="46.225.66.39"  # Or local Docker daemon
 ```
 
@@ -150,7 +149,7 @@ POST /api/v1/keys/set
 Content-Type: application/json
 
 {
-  "api_key": "sk-or-v1-..."
+  "api_key": "sk-..."
 }
 ```
 
@@ -172,7 +171,7 @@ open-desktop/
 │   ├── index.html              # Operator & Developer console UI
 │   └── styles.css              # Dark mode design system & responsive grid
 ├── server/                     # FastAPI engine & orchestrator
-│   ├── agent_runner.py         # LLM vision observe-think-act loop
+│   ├── agent_runner.py         # Vision observe-think-act loop
 │   ├── docker_manager.py       # Remote Docker lifecycle & SSH manager
 │   ├── main.py                 # REST & WebSocket API router
 │   └── orchestrator.py         # Multi-agent campaign coordinator

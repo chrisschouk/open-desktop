@@ -46,7 +46,7 @@ class Computer:
         res = requests.post(f"{self.base_url}/api/v1/computers/{self.computer_id}/bash", json={"command": command})
         return res.json()
 
-    def prompt(self, instruction: str, model: str = "nousresearch/hermes-3-llama-3.1-405b") -> dict:
+    def prompt(self, instruction: str, model: str = "default") -> dict:
         res = requests.post(f"{self.base_url}/api/v1/computers/{self.computer_id}/prompt", json={"prompt": instruction, "model": model})
         return res.json()
 

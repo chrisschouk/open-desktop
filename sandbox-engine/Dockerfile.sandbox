@@ -37,10 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-dri3-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Node.js 20 LTS & Global CLI Tools (Claude Code, etc.)
+# 2. Node.js 20 LTS & Global CLI Tools
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g @anthropic-ai/claude-code typescript ts-node && \
+    npm install -g typescript ts-node && \
     rm -rf /var/lib/apt/lists/*
 
 # 3. Google Chrome
@@ -69,9 +69,8 @@ RUN useradd -m -s /bin/bash agent && \
     mkdir -p /home/agent/Desktop /home/agent/ObsidianVault /home/agent/Projects /app && \
     chown -R agent:agent /home/agent /app
 
-# 7. Clone Hermes Desktop & Orgo Desktop Plugin templates
-RUN git clone https://github.com/nickvasilescu/orgo-template-hermes-desktop /home/agent/Projects/hermes-desktop || true && \
-    git clone https://github.com/nickvasilescu/hermes-orgo-desktop-plugin /home/agent/Projects/hermes-orgo-plugin || true && \
+# 7. Setup Projects Workspace
+RUN mkdir -p /home/agent/Projects/desktop-app && \
     chown -R agent:agent /home/agent/Projects
 
 # 8. Create Desktop Launchers (.desktop files) on /home/agent/Desktop
@@ -79,7 +78,7 @@ RUN echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Google Chrome\nEx
     echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=VS Code\nExec=code --no-sandbox --user-data-dir=/home/agent/.vscode-data %F\nIcon=vscode\nTerminal=false\nCategories=Development;IDE;' > /home/agent/Desktop/VS-Code.desktop && \
     echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Obsidian\nExec=obsidian --no-sandbox /home/agent/ObsidianVault %U\nIcon=obsidian\nTerminal=false\nCategories=Office;' > /home/agent/Desktop/Obsidian.desktop && \
     echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Terminal\nExec=xfce4-terminal\nIcon=utilities-terminal\nTerminal=false\nCategories=System;' > /home/agent/Desktop/Terminal.desktop && \
-    echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Hermes Desktop\nExec=xfce4-terminal --working-directory=/home/agent/Projects/hermes-desktop\nIcon=system-run\nTerminal=false\nCategories=Development;' > /home/agent/Desktop/Hermes-Desktop.desktop && \
+    echo '[Desktop Entry]\nVersion=1.0\nType=Application\nName=Projects Workspace\nExec=xfce4-terminal --working-directory=/home/agent/Projects\nIcon=system-run\nTerminal=false\nCategories=Development;' > /home/agent/Desktop/Projects-Workspace.desktop && \
     chmod +x /home/agent/Desktop/*.desktop && \
     chown -R agent:agent /home/agent/Desktop
 
