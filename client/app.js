@@ -394,7 +394,7 @@ async function runCampaign() {
 
     const prompt = agentPrompt ? agentPrompt.value.trim() : "";
     if (!prompt) {
-        alert("Please enter a campaign goal for Hubert Master Agent!");
+        alert("Please enter a campaign goal instruction.");
         return;
     }
 
@@ -421,7 +421,7 @@ async function runCampaign() {
         setTimeout(() => {
             if (btnRunAgent) {
                 btnRunAgent.disabled = false;
-                btnRunAgent.textContent = "Execute OpenDesktop Fleet Campaign (Hubert)";
+                btnRunAgent.textContent = "Execute Fleet Campaign";
             }
         }, 3000);
     }

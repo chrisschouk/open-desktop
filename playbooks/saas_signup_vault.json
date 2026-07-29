@@ -15,7 +15,7 @@
       "step": 1,
       "machine": "cmp_hubert",
       "action": "orchestrate",
-      "description": "Hubert Master initializes SaaS Onboarding playbook."
+      "description": "Fleet Orchestrator initializes SaaS Onboarding playbook."
     },
     {
       "step": 2,

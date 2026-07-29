@@ -230,7 +230,7 @@ class LLMAgentRunner:
                     "step": self.step_count,
                     "thought": thought or f"Executing: {action_type}",
                     "action_type": action_type,
-                    "agent": "Hermes Agent",
+                    "agent": "Vision Agent",
                     "machine_id": sandbox_id,
                     "details": {k: v for k, v in action.items()
                                 if k not in ("thought", "action")},
@@ -243,9 +243,9 @@ class LLMAgentRunner:
                     await broadcast_action(sandbox_id, {
                         "type": "action",
                         "step": self.step_count,
-                        "thought": f"✅ {summary}",
+                        "thought": f"Completed: {summary}",
                         "action_type": "done",
-                        "agent": "Hermes Agent",
+                        "agent": "Vision Agent",
                         "machine_id": sandbox_id,
                     })
                 return {"status": "completed", "summary": summary, "steps": self.step_count}
@@ -273,7 +273,7 @@ class LLMAgentRunner:
             await broadcast_action(sandbox_id, {
                 "type": "action",
                 "step": self.step_count,
-                "thought": "⚠️ Maximum steps reached. Task may be incomplete.",
+                "thought": "Maximum steps reached. Task may be incomplete.",
                 "action_type": "max_steps",
                 "agent": "Hermes Agent",
                 "machine_id": sandbox_id,

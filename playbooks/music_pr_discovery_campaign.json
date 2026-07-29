@@ -15,7 +15,7 @@
       "step": 1,
       "machine": "cmp_hubert",
       "action": "orchestrate",
-      "description": "Hubert Master initializes Radio Discovery campaign for Total Audio Promo."
+      "description": "Fleet Orchestrator initializes Radio Discovery campaign for Total Audio Promo."
     },
     {
       "step": 2,
@@ -39,7 +39,7 @@
       "step": 5,
       "machine": "cmp_hubert",
       "action": "notify",
-      "description": "Hubert Master sends campaign summary report to Discord/Telegram channel."
+      "description": "Fleet Orchestrator sends campaign summary report to Discord/Telegram channel."
     }
   ]
 }

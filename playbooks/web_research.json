@@ -15,7 +15,7 @@
       "step": 1,
       "machine": "cmp_hubert",
       "action": "orchestrate",
-      "description": "Hubert Master initializes Web Research campaign."
+      "description": "Fleet Orchestrator initializes Web Research campaign."
     },
     {
       "step": 2,
@@ -33,7 +33,7 @@
       "step": 4,
       "machine": "cmp_hubert",
       "action": "notify",
-      "description": "Hubert Master sends summary notification to Discord/Telegram channel."
+      "description": "Fleet Orchestrator sends summary notification to Discord/Telegram channel."
     }
   ]
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenDesktop | Computers for Digital Employees</title>
+    <title>OpenDesktop | Cloud Desktop Infrastructure for AI Agents</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -19,13 +19,13 @@
                 </div>
                 <div class="brand-text">
                     <span class="brand-name">OpenDesktop</span>
-                    <span class="brand-tag">computers for digital employees</span>
+                    <span class="brand-tag">Cloud Desktop Infrastructure for AI Agents</span>
                 </div>
             </div>
 
             <div class="status-pill">
                 <span class="status-dot"></span>
-                <span>Hetzner Node • Hubert Playbook Engine (60FPS)</span>
+                <span>Hetzner Node • Fleet Orchestrator Online</span>
             </div>
 
             <div class="nav-actions">
@@ -34,7 +34,7 @@
                     <button class="btn btn-secondary btn-sm" id="btn-tab-developer">Developer Console</button>
                 </div>
                 <button class="btn btn-secondary" id="btn-api-keys">
-                    Generate API Key
+                    API Key Settings
                 </button>
             </div>
         </header>
@@ -43,38 +43,26 @@
         <div class="computer-tabs-bar" id="computer-tabs-bar">
             <button class="tab-btn active" data-id="cmp_hubert">
                 <span class="tab-dot"></span>
-                <span>Machine #1 (Hubert Master)</span>
-            </button>
-            <button class="tab-btn" data-id="cmp_research">
-                <span class="tab-dot"></span>
-                <span>Machine #2 (Research Agent)</span>
-            </button>
-            <button class="tab-btn" data-id="cmp_signup">
-                <span class="tab-dot"></span>
-                <span>Machine #3 (Sign-Up Agent)</span>
-            </button>
-            <button class="tab-btn" data-id="cmp_obsidian">
-                <span class="tab-dot"></span>
-                <span>Machine #4 (Obsidian Vault)</span>
+                <span>Machine #1 (Primary Agent)</span>
             </button>
             <button class="add-tab-btn" id="btn-add-computer">
                 + Provision Machine
             </button>
             <div class="fleet-capacity-badge">
-                <span id="active-computer-count">4</span> / 15 Machines Running
+                <span id="active-computer-count">1</span> / 15 Machines Active
             </div>
         </div>
 
         <!-- OPERATOR VIEW CONTAINER -->
         <main class="main-content" id="container-operator">
-            <!-- 2x2 Multi-Agent Screen Grid Section -->
+            <!-- Multi-Agent Screen Grid Section -->
             <section class="viewport-section" id="grid-viewport-section">
                 <div class="grid-card-wrapper">
                     <div class="grid-header">
-                        <h3>Hubert Master Fleet Overview - 4 Cloud Machines Working Simultaneously</h3>
+                        <h3>Fleet Control Plane - Multi-Sandbox Execution Grid</h3>
                         <div style="display:flex; gap:8px;">
-                            <span class="badge badge-purple" id="badge-active-playbook">PLAYBOOK: GENERIC WEB RESEARCH</span>
-                            <span class="badge badge-green">4 FLEET MACHINES RUNNING</span>
+                            <span class="badge badge-purple" id="badge-active-playbook">PLAYBOOK: WEB RESEARCH</span>
+                            <span class="badge badge-green">MACHINES RUNNING</span>
                         </div>
                     </div>
 
@@ -84,25 +72,25 @@
                 </div>
             </section>
 
-            <!-- Right Sidebar: Hubert Controls & Playbook Selector -->
+            <!-- Right Sidebar: Fleet Orchestration Controls -->
             <section class="agent-section">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E6AD2" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                            Hubert Master Fleet Campaign
+                            Fleet Orchestration Dispatch
                         </div>
                     </div>
 
                     <div class="card-body">
                         <!-- Playbook Category Filter & Selector -->
                         <div class="prompt-group">
-                            <label class="input-label">Select Fleet Playbook</label>
+                            <label class="input-label">Select Declarative Playbook</label>
                             <select id="playbook-select" class="text-input">
-                                <option value="pb_web_research">🌐 Generic Web Research & Intelligence (pb_web_research)</option>
-                                <option value="pb_data_entry_rpa">🔄 Cross-App Data Entry & RPA Automation (pb_data_entry_rpa)</option>
-                                <option value="pb_lead_gen_campaign">🚀 Multi-Agent Lead Gen & Sign-Up Campaign (pb_lead_gen_campaign)</option>
-                                <option value="pb_music_pr_discovery">🎵 Total Audio Promo - Music PR Discovery (pb_music_pr_discovery)</option>
+                                <option value="pb_web_research">Web Research & Intelligence (pb_web_research)</option>
+                                <option value="pb_data_entry_rpa">Cross-App RPA Automation (pb_data_entry_rpa)</option>
+                                <option value="pb_lead_gen_campaign">Multi-Agent Lead Generation (pb_lead_gen_campaign)</option>
+                                <option value="pb_music_pr_discovery">Music PR Discovery & Research (pb_music_pr_discovery)</option>
                             </select>
                         </div>
 
@@ -112,29 +100,29 @@
                                 <input type="password" id="sidebar-api-key" class="text-input" placeholder="sk-or-v1-... or sk-proj-..." style="flex:1; font-family:var(--font-mono); font-size:0.75rem;">
                                 <button type="button" class="btn btn-secondary" id="btn-save-sidebar-key">Save Key</button>
                             </div>
-                            <span id="sidebar-key-status" style="font-size:0.75rem; color:var(--accent-emerald); display:none; margin-top:4px;">✓ API Key saved to engine!</span>
+                            <span id="sidebar-key-status" style="font-size:0.75rem; color:var(--accent-emerald); display:none; margin-top:4px;">API Key saved to engine</span>
                         </div>
 
                         <div class="prompt-group">
                             <label class="input-label">Campaign Goal Instruction</label>
-                            <textarea id="agent-prompt" class="text-input textarea-input" placeholder="Give Hubert a campaign goal... (e.g. 'Research 10 competitors for a B2B SaaS platform and write summary report to Obsidian Vault')"></textarea>
+                            <textarea id="agent-prompt" class="text-input textarea-input" placeholder="Enter campaign objective (e.g. 'Research 10 competitors for a B2B SaaS platform and save summary report to Obsidian Vault')"></textarea>
                         </div>
 
                         <!-- Horizontal Preset Chips -->
                         <div class="quick-prompts">
                             <button class="chip-btn" data-prompt="Research 10 competitors for a B2B SaaS platform and write summary report to Obsidian Vault">
-                                🌐 B2B SaaS Research
+                                B2B SaaS Research
                             </button>
                             <button class="chip-btn" data-prompt="Automate uploading invoices and cross-app form entries">
-                                🔄 Cross-App RPA
+                                Cross-App RPA
                             </button>
-                            <button class="chip-btn" data-prompt="Can you research the brand Total Audio Promo and its founder Chris Schofield? Spin up some agents to go and research, sign up for TotalAudioPromo.com, and do that. Notify on Discord when done.">
-                                🎵 Music PR Campaign
+                            <button class="chip-btn" data-prompt="Research brand Total Audio Promo and founder Chris Schofield, navigate to TotalAudioPromo.com and report findings.">
+                                Music PR Campaign
                             </button>
                         </div>
 
                         <button class="btn btn-primary btn-full" id="btn-run-agent">
-                            Execute OpenDesktop Fleet Campaign (Hubert)
+                            Execute Fleet Campaign
                         </button>
                     </div>
                 </div>
@@ -144,7 +132,7 @@
                     <div class="card-header">
                         <div class="card-title">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 14 15 20 9"/><polyline points="14 9 20 9 20 15"/></svg>
-                            Fleet Action Stream & Hubert Rationale
+                            Fleet Telemetry & Action Stream
                         </div>
                     </div>
                     <div class="card-body log-feed" id="log-feed">
@@ -159,7 +147,7 @@
             <section class="viewport-section" style="grid-column: span 2;">
                 <div class="grid-card-wrapper">
                     <div class="grid-header">
-                        <h3>OpenDesktop Developer Console & Architecture</h3>
+                        <h3>OpenDesktop System Architecture & API Reference</h3>
                         <span class="badge badge-purple">DEVELOPER CONSOLE</span>
                     </div>
 
@@ -167,12 +155,12 @@
                         <!-- Machine Templates Card -->
                         <div class="card">
                             <div class="card-header">
-                                <div class="card-title">🖥️ Machine Templates Catalog</div>
+                                <div class="card-title">Machine Templates Catalog</div>
                             </div>
                             <div class="card-body">
                                 <div class="code-box">
                                     <pre>{
-  "ops_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["chromium", "email"]},
+  "ops_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["chrome", "email"]},
   "support_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["helpdesk_ui"]},
   "rpa_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["playwright_stealth"]}
 }</pre>
@@ -183,7 +171,7 @@
                         <!-- OpenDesktop SDK Code snippet -->
                         <div class="card">
                             <div class="card-header">
-                                <div class="card-title">🐍 OpenDesktop Python SDK (`open_desktop`)</div>
+                                <div class="card-title">OpenDesktop Python SDK (<code>open_desktop</code>)</div>
                             </div>
                             <div class="card-body">
                                 <div class="code-box">
@@ -193,7 +181,7 @@ machine = open_desktop.Machine("mach_01", api_key="sk_live_opendesktop_...")
 session = open_desktop.Session(machine, job_name="B2B Research Task")
 
 session.open_url("https://www.google.com")
-session.fill_form({"q": "OpenDesktop Digital Employee OS"})
+session.fill_form({"q": "OpenDesktop Infrastructure"})
 session.run_playbook("pb_web_research", prompt="...")
 session.finish()</pre>
                                 </div>
@@ -218,7 +206,7 @@ session.finish()</pre>
                             <input type="password" id="input-api-key" class="text-input" placeholder="sk-or-v1-... or sk-proj-..." style="flex:1;">
                             <button type="button" class="btn btn-primary" id="btn-save-api-key">Save Key</button>
                         </div>
-                        <span id="key-save-status" style="font-size: 0.75rem; color: var(--accent-emerald); display:none; margin-top:4px;">Key saved!</span>
+                        <span id="key-save-status" style="font-size: 0.75rem; color: var(--accent-emerald); display:none; margin-top:4px;">API Key saved</span>
                     </div>
 
                     <p style="color: var(--text-secondary); font-size: 0.8rem;">Run declarative playbooks programmatically:</p>

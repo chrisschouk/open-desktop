@@ -65,7 +65,7 @@ class FleetOrchestrator:
             await broadcast_action("fleet", {
                 "type": "action",
                 "step": 0,
-                "thought": f"🚀 Fleet campaign starting: {prompt}",
+                "thought": f"Fleet campaign starting: {prompt}",
                 "action_type": "fleet_start",
                 "agent": "Fleet Orchestrator",
                 "machine_id": "fleet",
@@ -113,7 +113,7 @@ class FleetOrchestrator:
             await broadcast_action("fleet", {
                 "type": "action",
                 "step": 99,
-                "thought": f"✅ Fleet campaign complete. {len(machines)} machines finished.",
+                "thought": f"Fleet campaign complete. {len(machines)} machines finished.",
                 "action_type": "fleet_complete",
                 "agent": "Fleet Orchestrator",
                 "machine_id": "fleet",

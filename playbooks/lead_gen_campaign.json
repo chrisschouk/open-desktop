@@ -13,7 +13,7 @@
       "step": 1,
       "machine": "cmp_hubert",
       "action": "orchestrate",
-      "description": "Hubert Master provisions fleet and parses user prompt keywords."
+      "description": "Fleet Orchestrator provisions fleet and parses user prompt keywords."
     },
     {
       "step": 2,
@@ -37,7 +37,7 @@
       "step": 5,
       "machine": "cmp_hubert",
       "action": "notify",
-      "description": "Hubert Master dispatches completion alert to Discord/Telegram channel."
+      "description": "Fleet Orchestrator dispatches completion alert to Discord/Telegram channel."
     }
   ]
 }

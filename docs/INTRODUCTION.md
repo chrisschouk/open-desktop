@@ -1,29 +1,29 @@
-# OpenDesktop – Computers for Digital Employees
+# OpenDesktop System Architecture
 
-> **Instant cloud desktops your AI agents and digital employees can see, control, and operate in under a second.**
+> **Cloud Desktop Infrastructure & Sandbox Engine for Autonomous AI Agents**
 
-OpenDesktop provides a fleet of sandboxed Linux desktop environments, reachable over a clean REST API, WebSockets VNC, and the `open_desktop` Python SDK.
-
----
-
-## 1. What OpenDesktop Is
-
-- **Persistent Cloud Desktops**: Full Linux userland environments with browser (Chromium), terminal, file system, and GUI desktop ready for agent interaction.
-- **Provider-Agnostic Engine**: Drive desktops using any LLM or model provider (Anthropic Claude, OpenAI GPT-4, Google Gemini, Nous Hermes 3).
-- **Multi-Machine Fleet Orchestration**: Declarative playbooks that coordinate specialized machines (`research_machine`, `signup_machine`, `vault_machine`).
+OpenDesktop provides a fleet of isolated, containerized Linux desktop environments accessible via REST APIs, WebSockets, and the `open_desktop` Python SDK.
 
 ---
 
-## 2. What OpenDesktop Is Not
+## 1. Core Architecture
 
-- **Not a General Cloud VPS Provider**: OpenDesktop is purpose-built for AI computer-use loops, with high-speed visual screenshot endpoints and isolated display sandboxing (`DISPLAY=:1`).
-- **Not an AI Model Provider**: Bring your own LLMs, local weights, or API keys.
-- **Not a Browser Extension**: OpenDesktop provides full OS desktop sandboxes, not just headless browser sessions.
+- **Persistent Desktop Sandboxes**: Full Linux userland environments with XFCE4, Google Chrome, VS Code, Obsidian, terminal tools, and local storage.
+- **Provider-Agnostic Engine**: Drive desktops using any vision-capable model provider (Anthropic Claude, OpenAI GPT-4, Google Gemini, OpenRouter).
+- **Multi-Machine Fleet Orchestration**: Declarative playbooks that coordinate specialized machine roles (`ops_machine`, `rpa_machine`, `vault_machine`).
 
 ---
 
-## 3. Three Primary Usage Patterns
+## 2. Platform Positioning
 
-1. **LLM-Driven Desktop Control**: Pass high-resolution screenshots to vision-capable models (e.g. Claude 3.5 Sonnet, Hermes 3) and execute mouse/keyboard actions (`click`, `type`, `press`).
-2. **In-Machine Agent Execution**: Deploy agent CLIs and autonomous employees (OpenClaw, Dewey, custom scripts) directly inside the desktop environment.
-3. **Continuous Scripting & RPA**: Run automated web form entry, cross-app data synchronization, and dev tools continuously across persistent machines.
+- **Specialized Computer-Use Sandbox**: Purpose-built for AI computer-use loops with low-latency screenshot streaming and isolated X11 display sandboxing (`DISPLAY=:1`).
+- **Full OS Environment**: Supports desktop applications, local binaries, and terminal workflows beyond simple headless browser automation.
+- **Decoupled Architecture**: Clean separation between control plane (FastAPI engine) and execution runtime (isolated Docker containers).
+
+---
+
+## 3. Primary Execution Patterns
+
+1. **Vision-Driven Desktop Control**: Pass desktop screenshots to multimodal models and execute precise input events (`click`, `type`, `drag`, `press`).
+2. **Autonomous Agent Execution**: Run CLI tools and background workers directly inside the container environment.
+3. **Cross-Application Automation**: Automate data transfer across web interfaces and desktop software lacking native REST APIs.

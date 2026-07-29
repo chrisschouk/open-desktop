@@ -1,21 +1,27 @@
 # OpenDesktop Developer Quickstart
 
-Learn how to provision a persistent desktop machine and automate tasks using the `open_desktop` Python SDK in under 5 minutes.
+Provision persistent desktop sandboxes and automate workflows using the OpenDesktop API and `open_desktop` Python SDK.
 
 ---
 
-## Step 1: Install & Launch Engine
+## Step 1: Launch Server & Client
 
-Start the OpenDesktop REST server on port 8000:
+Start the OpenDesktop REST API server:
 ```bash
-python3 server/main.py
+uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Start the frontend web client:
+```bash
+cd client
+python3 -m http.server 8888
 ```
 
 ---
 
-## Step 2: Provision a Cloud Machine
+## Step 2: Provision a Cloud Sandbox Machine
 
-Create a machine using the `medium` template:
+Create a machine container via the REST API:
 ```bash
 curl -X POST http://localhost:8000/api/v1/machines \
   -H "Content-Type: application/json" \
@@ -31,29 +37,28 @@ import open_desktop
 
 # Connect to cloud desktop sandbox
 machine = open_desktop.Machine("mach_01", api_key="sk_live_opendesktop_...")
-session = open_desktop.Session(machine, job_name="B2B Research Task")
+session = open_desktop.Session(machine, job_name="B2B Market Research")
 
-# Execute higher-order flow helpers
+# Execute automation methods
 session.open_url("https://www.google.com")
-session.fill_form({"q": "OpenDesktop Digital Employee OS"})
+session.fill_form({"q": "OpenDesktop Infrastructure"})
 
-# Capture screen screenshot
+# Capture screen buffer
 screenshot_bytes = session.see()
 
-# Finish session
 session.finish()
 ```
 
 ---
 
-## Step 4: Run a Declarative Multi-Machine Fleet Playbook
+## Step 4: Run Declarative Playbook Campaign
 
-Launch a 4-machine fleet campaign programmatically:
+Launch a fleet playbook programmatically:
 ```bash
 curl -X POST http://localhost:8000/api/v1/playbooks/run \
   -H "Content-Type: application/json" \
   -d '{
     "playbook_id": "pb_web_research",
-    "prompt": "Research 10 competitors for a B2B SaaS platform and write summary to Obsidian Vault"
+    "prompt": "Research 10 competitors for a B2B SaaS platform and write summary report to Obsidian Vault"
   }'
 ```
