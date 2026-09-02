@@ -19,6 +19,7 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() == "true"
 SANDBOX_MODE = os.getenv("SANDBOX_MODE", "local").lower()  # local | remote
+SANDBOX_ENABLED = os.getenv("SANDBOX_ENABLED", "true").lower() == "true"
 HETZNER_HOST = os.getenv("HETZNER_HOST", "")
 SSH_HOST_ALIAS = os.getenv("SSH_HOST_ALIAS", "hetzner")
 SANDBOX_IMAGE = os.getenv("SANDBOX_IMAGE", "opendesktop-sandbox:latest")
@@ -49,13 +50,18 @@ _using_openrouter = bool(OPENROUTER_API_KEY) or (
     CHAT_API_KEY.startswith("sk-or-") if CHAT_API_KEY else False
 )
 _default_url = OPENROUTER_API_URL if _using_openrouter else OPENAI_API_URL
-_default_model = "openai/gpt-4o-mini" if _using_openrouter else "gpt-4o-mini"
+_default_chat_model = (
+    "deepseek/deepseek-v4-flash" if _using_openrouter else "gpt-4o-mini"
+)
+_default_vision_model = (
+    "google/gemini-2.0-flash-001" if _using_openrouter else "gpt-4o-mini"
+)
 
 CHAT_API_URL = os.getenv("CHAT_API_URL", _default_url)
-CHAT_MODEL = os.getenv("CHAT_MODEL", _default_model)
+CHAT_MODEL = os.getenv("CHAT_MODEL", _default_chat_model)
 
 VISION_API_URL = os.getenv("VISION_API_URL", _default_url)
-VISION_MODEL = os.getenv("VISION_MODEL", _default_model)
+VISION_MODEL = os.getenv("VISION_MODEL", _default_vision_model)
 
 # Agent limits
 MAX_VISION_STEPS = int(os.getenv("MAX_VISION_STEPS", "25"))
@@ -75,8 +81,8 @@ def apply_llm_api_key(key: str) -> None:
         os.environ["OPENROUTER_API_KEY"] = key
         os.environ.setdefault("CHAT_API_URL", OPENROUTER_API_URL)
         os.environ.setdefault("VISION_API_URL", OPENROUTER_API_URL)
-        os.environ.setdefault("CHAT_MODEL", "openai/gpt-4o-mini")
-        os.environ.setdefault("VISION_MODEL", "openai/gpt-4o-mini")
+        os.environ.setdefault("CHAT_MODEL", "deepseek/deepseek-v4-flash")
+        os.environ.setdefault("VISION_MODEL", "google/gemini-2.0-flash-001")
 
 
 def llm_provider_label() -> str:

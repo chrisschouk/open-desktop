@@ -11,6 +11,7 @@ from . import memory
 from .health import get_health
 from .intent_router import classify_intent
 from .sandbox_factory import sandbox_manager
+from .sandbox_status import get_sandbox_status, should_fallback_desktop
 from .skills import match_skills
 from .workerhub import get_workerhub_catalog
 
@@ -88,8 +89,17 @@ def _orient_next(health: dict) -> List[str]:
     steps = []
     if not health.get("api_key_configured"):
         steps.append("configure_api_key")
-    if not health.get("docker", {}).get("available"):
-        steps.append("start_docker_for_desktop_tasks")
+    if not health.get("sandbox_available"):
+        sandbox = health.get("sandbox") or {}
+        if not health.get("sandbox_enabled"):
+            steps.append("browser_research_only_sandbox_disabled")
+        elif health.get("sandbox_mode") == "remote":
+            if not health.get("hetzner_host"):
+                steps.append("set_hetzner_host")
+            else:
+                steps.append("fix_hetzner_ssh_or_remote_docker")
+        else:
+            steps.append("start_docker_for_desktop_tasks")
     if not steps:
         steps.append("create_session_or_chat")
     return steps
@@ -127,9 +137,11 @@ async def agent_plan(
 
     tier = intent_to_tier(intent)
     playbook_id = classification.get("playbook_id") or skill_playbook
+    sandbox_status = await get_sandbox_status()
     sandbox_required = tier in ("T2", "T3", "T4")
+    fallback = should_fallback_desktop(intent, force_intent, sandbox_status)
 
-    return {
+    plan = {
         "ok": True,
         "dry_run": True,
         "message": message,
@@ -138,12 +150,28 @@ async def agent_plan(
         "tier": tier,
         "estimated_cost": tier_cost(tier),
         "sandbox_required": sandbox_required,
+        "sandbox_available": sandbox_status.get("sandbox_available", False),
+        "sandbox_mode": sandbox_status.get("sandbox_mode"),
         "playbook_id": playbook_id,
         "task_prompt": classification.get("task_prompt") or message,
         "skills": [s["id"] for s in matched_skills],
         "classification": classification,
         "next": _plan_next(intent, session_id),
     }
+
+    if fallback:
+        plan["fallback"] = True
+        plan["fallback_intent"] = "browser"
+        plan["fallback_tier"] = "T1"
+        plan["fallback_cost"] = tier_cost("T1")
+        plan["original_intent"] = intent
+        plan["intent"] = "browser"
+        plan["tier"] = "T1"
+        plan["estimated_cost"] = tier_cost("T1")
+        plan["sandbox_required"] = False
+        plan["next"] = _plan_next("browser", session_id)
+
+    return plan
 
 
 def _plan_next(intent: str, session_id: Optional[str]) -> List[str]:
@@ -231,6 +259,12 @@ def envelope_chat_response(
         "playbook_id": result.get("playbook_id"),
         "skills": result.get("skills", []),
     }
+
+    if result.get("fallback"):
+        envelope["fallback"] = True
+        envelope["original_intent"] = result.get("original_intent")
+        envelope["tier"] = "T1"
+        envelope["estimated_cost"] = tier_cost("T1")
 
     if session_id:
         envelope["observe"] = build_observe(session_id, request_base, machine_id)
