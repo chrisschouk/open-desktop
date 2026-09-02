@@ -29,7 +29,12 @@ If intent is playbook, set playbook_id to one of: pb_web_research, pb_data_entry
 
 async def classify_intent(message: str, history: Optional[list] = None) -> dict:
     """Fast LLM classification; falls back to keyword heuristics."""
-    api_key = os.getenv("CHAT_API_KEY") or os.getenv("VISION_API_KEY") or CHAT_API_KEY
+    api_key = (
+        os.getenv("CHAT_API_KEY")
+        or os.getenv("OPENROUTER_API_KEY")
+        or os.getenv("VISION_API_KEY")
+        or CHAT_API_KEY
+    )
     if not api_key:
         return _heuristic_classify(message)
 

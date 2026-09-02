@@ -40,7 +40,7 @@
                     <button class="btn btn-secondary btn-sm" id="btn-tab-developer">Developer Console</button>
                 </div>
                 <button class="btn btn-secondary" id="btn-api-keys">
-                    API Key Settings
+                    API Key (OpenRouter)
                 </button>
             </div>
         </header>
@@ -139,7 +139,7 @@
                         </div>
 
                         <div class="prompt-group">
-                            <label class="input-label">Vision Control API Key</label>
+                            <label class="input-label">OpenRouter / API key</label>
                             <div style="display:flex; gap:8px;">
                                 <input type="password" id="sidebar-api-key" class="text-input" placeholder="sk-or-v1-... or sk-proj-..." style="flex:1; font-family:var(--font-mono); font-size:0.75rem;">
                                 <button type="button" class="btn btn-secondary" id="btn-save-sidebar-key">Save Key</button>
@@ -240,14 +240,17 @@ session.finish()</pre>
         <div class="modal-backdrop" id="modal-api">
             <div class="modal-card">
                 <div class="modal-header">
-                    <h3>OpenDesktop API Key Management</h3>
+                    <h3>OpenDesktop API Key</h3>
                     <button class="close-btn" id="btn-close-modal">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div style="margin-bottom: 16px;">
-                        <label class="input-label">Set Vision Model API Key</label>
+                        <label class="input-label">OpenRouter key (one key for chat + desktop)</label>
+                        <p style="font-size:0.8rem; color:var(--text-secondary); margin:4px 0 8px;">
+                            Paste your <code>sk-or-v1-...</code> key from openrouter.ai. Same key powers conversation and sandbox automation.
+                        </p>
                         <div style="display:flex; gap: 8px; margin-top: 6px;">
-                            <input type="password" id="input-api-key" class="text-input" placeholder="sk-or-v1-... or sk-proj-..." style="flex:1;">
+                            <input type="password" id="input-api-key" class="text-input" placeholder="sk-or-v1-..." style="flex:1;">
                             <button type="button" class="btn btn-primary" id="btn-save-api-key">Save Key</button>
                         </div>
                         <span id="key-save-status" style="font-size: 0.75rem; color: var(--accent-emerald); display:none; margin-top:4px;">API Key saved</span>

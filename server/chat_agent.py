@@ -15,11 +15,16 @@ async def chat_reply(
     history: Optional[List[dict]] = None,
     persona_id: str = "openworker",
 ) -> str:
-    api_key = os.getenv("CHAT_API_KEY") or os.getenv("VISION_API_KEY") or CHAT_API_KEY
+    api_key = (
+        os.getenv("CHAT_API_KEY")
+        or os.getenv("OPENROUTER_API_KEY")
+        or os.getenv("VISION_API_KEY")
+        or CHAT_API_KEY
+    )
     if not api_key:
         return (
-            "I need an API key to chat. Set CHAT_API_KEY or VISION_API_KEY in your "
-            ".env file, or paste one in Settings."
+            "I need an API key to chat. Add **OPENROUTER_API_KEY** to your .env "
+            "(one OpenRouter key covers chat and desktop), or paste it in API Key Settings."
         )
 
     messages = [{"role": "system", "content": get_system_prompt(persona_id)}]

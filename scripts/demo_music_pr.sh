@@ -18,9 +18,26 @@ echo "Session: $SESSION_ID"
 
 echo ""
 echo "==> Send music PR prompt"
-CHAT_JSON=$(curl -sf -X POST "$API/api/v1/chat" \
-  -H "Content-Type: application/json" \
-  -d "$(python3 -c "import json; print(json.dumps({'message': '''$PROMPT''', 'session_id': '$SESSION_ID'}))")")
+CHAT_JSON=$(PROMPT="$PROMPT" SESSION_ID="$SESSION_ID" python3 <<'PY'
+import json
+import os
+import urllib.request
+
+api = os.environ.get("OPENDESKTOP_API_URL", "http://localhost:8000").rstrip("/")
+body = json.dumps({
+    "message": os.environ["PROMPT"],
+    "session_id": os.environ["SESSION_ID"],
+}).encode()
+req = urllib.request.Request(
+    f"{api}/api/v1/chat",
+    data=body,
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+with urllib.request.urlopen(req) as resp:
+    print(resp.read().decode())
+PY
+)
 echo "$CHAT_JSON" | python3 -m json.tool
 
 echo ""
