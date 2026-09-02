@@ -45,6 +45,14 @@ def _register_builtin_tools():
     from .playbook_executor import run_playbook, list_playbooks
     from .agent_runner import agent_runner
     from .chat_service import chat_service
+    from .agent_api import agent_orient, agent_plan, new_trace_id, envelope_chat_response
+    import os
+
+    async def openworker_orient() -> dict:
+        return await agent_orient()
+
+    async def openworker_plan(message: str, session_id: str = None, force_intent: str = None) -> dict:
+        return await agent_plan(message, session_id, force_intent)
 
     async def desktop_screenshot(machine_id: str) -> dict:
         b64 = await sandbox_manager.get_screenshot_base64(machine_id)
@@ -62,9 +70,15 @@ def _register_builtin_tools():
     async def run_playbook_tool(playbook_id: str, prompt: str) -> dict:
         return await run_playbook(playbook_id, prompt, sandbox_manager, agent_runner, None)
 
-    async def openworker_chat(message: str, session_id: str = None, persona_id: str = "openworker") -> dict:
+    async def openworker_chat(
+        message: str,
+        session_id: str = None,
+        persona_id: str = "openworker",
+        force_intent: str = None,
+    ) -> dict:
         """Buzz-friendly chat entry — routes through OpenWorker intent layer."""
         from . import memory
+        trace_id = new_trace_id()
         if session_id:
             session = memory.get_session(session_id)
             if not session:
@@ -73,8 +87,32 @@ def _register_builtin_tools():
         else:
             session = memory.create_session(persona_id=persona_id)
             sid = session["id"]
-        return await chat_service.handle_message(sid, message, None)
+        result = await chat_service.handle_message(
+            sid, message, None, trace_id=trace_id, force_intent=force_intent,
+        )
+        base = os.getenv("OPENDESKTOP_API_URL", "http://localhost:8000").rstrip("/")
+        return envelope_chat_response(result, trace_id, base)
 
+    register_tool(
+        "openworker_orient",
+        "One-call system bootstrap — health, machines, sessions, hub summary.",
+        {"type": "object", "properties": {}},
+        openworker_orient,
+    )
+    register_tool(
+        "openworker_plan",
+        "Dry-run intent classification without executing — returns tier and estimated cost.",
+        {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+                "session_id": {"type": "string"},
+                "force_intent": {"type": "string"},
+            },
+            "required": ["message"],
+        },
+        openworker_plan,
+    )
     register_tool(
         "desktop_screenshot",
         "Capture a JPEG screenshot from an OpenDesktop sandbox machine.",
@@ -141,6 +179,7 @@ def _register_builtin_tools():
                 "message": {"type": "string", "description": "User message for OpenWorker"},
                 "session_id": {"type": "string", "description": "Optional existing session ID"},
                 "persona_id": {"type": "string", "description": "Persona ID (default: openworker)"},
+                "force_intent": {"type": "string", "description": "Override router: chat|browser|research|automate|playbook"},
             },
             "required": ["message"],
         },

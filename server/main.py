@@ -32,6 +32,13 @@ from .scheduler import init_schedules, create_schedule, list_schedules, schedule
 from .runtime import verify_api_token, can_set_api_key
 from .health import get_health
 from .workflow_loader import load_workflow_files
+from .agent_api import (
+    agent_orient,
+    agent_plan,
+    load_manifest,
+    new_trace_id,
+    envelope_chat_response,
+)
 
 
 # WebSocket connection manager
@@ -160,6 +167,14 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     persona_id: Optional[str] = "openworker"
+    force_intent: Optional[str] = None
+    trace_id: Optional[str] = None
+
+
+class PlanRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+    force_intent: Optional[str] = None
 
 
 class CreateSessionRequest(BaseModel):
@@ -172,6 +187,8 @@ class GatewayDispatchRequest(BaseModel):
     message: str
     user_id: Optional[str] = None
     persona_id: Optional[str] = "openworker"
+    force_intent: Optional[str] = None
+    trace_id: Optional[str] = None
 
 
 class CreateScheduleRequest(BaseModel):
@@ -232,6 +249,23 @@ def root():
 @app.get("/api/v1/health")
 async def health_check():
     return await get_health()
+
+
+# ── Agent-native API (Phase B) ────────────────────────
+
+@app.get("/api/v1/agent/orient")
+async def agent_orient_endpoint():
+    return await agent_orient()
+
+
+@app.get("/api/v1/agent/manifest")
+def agent_manifest_endpoint():
+    return load_manifest()
+
+
+@app.post("/api/v1/agent/plan")
+async def agent_plan_endpoint(req: PlanRequest):
+    return await agent_plan(req.message, req.session_id, req.force_intent)
 
 
 @app.get("/api/v1/machines")
@@ -356,7 +390,7 @@ def get_session_detail(session_id: str):
 
 
 @app.post("/api/v1/chat")
-async def chat(req: ChatRequest, background_tasks: BackgroundTasks):
+async def chat(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
     if req.session_id:
         session = memory.get_session(req.session_id)
         if not session:
@@ -366,10 +400,16 @@ async def chat(req: ChatRequest, background_tasks: BackgroundTasks):
         session = memory.create_session(persona_id=req.persona_id or "openworker")
         session_id = session["id"]
 
+    trace_id = req.trace_id or new_trace_id()
     result = await chat_service.handle_message(
-        session_id, req.message, manager.broadcast_action
+        session_id,
+        req.message,
+        manager.broadcast_action,
+        trace_id=trace_id,
+        force_intent=req.force_intent,
     )
-    return result
+    base = str(request.base_url).rstrip("/")
+    return envelope_chat_response(result, trace_id, base)
 
 
 @app.get("/api/v1/personas")
@@ -427,18 +467,27 @@ async def invoke_tool(req: ToolCallRequest, authorization: Optional[str] = Heade
 
 
 @app.post("/api/v1/gateway/dispatch")
-async def gateway_dispatch_endpoint(req: GatewayDispatchRequest, authorization: Optional[str] = Header(None)):
+async def gateway_dispatch_endpoint(
+    req: GatewayDispatchRequest,
+    request: Request,
+    authorization: Optional[str] = Header(None),
+):
     """Unified entry for Discord, Telegram, and other channel adapters."""
     if not verify_api_token(authorization):
         raise HTTPException(status_code=401, detail="Unauthorized")
-    return await gateway_dispatch(
+    trace_id = req.trace_id or new_trace_id()
+    result = await gateway_dispatch(
         req.channel,
         req.channel_id,
         req.message,
         req.user_id,
         req.persona_id or "openworker",
         manager.broadcast_action,
+        trace_id=trace_id,
+        force_intent=req.force_intent,
     )
+    base = str(request.base_url).rstrip("/")
+    return envelope_chat_response(result, trace_id, base)
 
 
 @app.get("/api/v1/schedules")

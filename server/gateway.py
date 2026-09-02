@@ -37,6 +37,8 @@ async def dispatch(
     user_id: Optional[str] = None,
     persona_id: str = "openworker",
     broadcast_action: Optional[Callable] = None,
+    trace_id: Optional[str] = None,
+    force_intent: Optional[str] = None,
 ) -> dict:
     """
     Unified entry point for all connectors.
@@ -44,7 +46,10 @@ async def dispatch(
     """
     key = session_key(channel, channel_id, user_id)
     session_id = resolve_session(key, persona_id)
-    result = await chat_service.handle_message(session_id, message, broadcast_action)
+    result = await chat_service.handle_message(
+        session_id, message, broadcast_action,
+        trace_id=trace_id, force_intent=force_intent,
+    )
     result["channel_key"] = key
     result["channel"] = channel
     return result

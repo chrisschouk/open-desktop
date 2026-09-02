@@ -19,32 +19,32 @@
 
 ---
 
-## Phase B — Observation API (low implementation, high agent value)
+## Phase B — Observation API ✅ shipped
 
 **Goal:** One call to understand everything; cheap dry-runs.
 
-| Item | Description |
-|------|-------------|
-| `GET /api/v1/agent/orient` | `{ health, machines[], active_sessions[], hub_summary }` |
-| `GET /api/v1/agent/manifest` | JSON export of `agent/manifest.yaml` |
-| `POST /api/v1/agent/plan` | `{ message }` → `{ intent, tier, playbook_id, estimated_cost }` no side effects |
-| Response envelope | Add `observe`, `next`, `tier` to `/chat` responses |
-| `trace_id` | Correlate chat → actions → audit entries |
-
-**Success metric:** Agent never polls screenshot WS for status.
+| Item | Status |
+|------|--------|
+| `GET /api/v1/agent/orient` | ✅ |
+| `GET /api/v1/agent/manifest` | ✅ |
+| `POST /api/v1/agent/plan` | ✅ |
+| Response envelope on `/chat` | ✅ `ok`, `trace_id`, `tier`, `observe`, `next` |
+| `trace_id` in audit | ✅ `chat_route`, `chat_complete`, `chat_error` |
+| `force_intent` on `/chat` | ✅ |
 
 ---
 
-## Phase C — CLI parity (`openworker` as agent shell)
+## Phase C — CLI parity ✅ shipped
 
-| Command | Behavior |
-|---------|----------|
-| `openworker orient` | Pretty JSON orient snapshot |
-| `openworker plan "…"` | Dry-run router |
-| `openworker wait sess_…` | Block until idle; exit 0/1 |
-| `openworker chat --json-envelope` | Full target response shape |
+| Command | Status |
+|---------|--------|
+| `openworker orient` | ✅ |
+| `openworker plan "…"` | ✅ |
+| `openworker wait sess_…` | ✅ |
+| `openworker manifest` | ✅ |
+| Enveloped `openworker chat` | ✅ via API |
 
-**Success metric:** Shell scripts replace ad-hoc curl loops.
+MCP: `openworker_orient`, `openworker_plan` tools added.
 
 ---
 
