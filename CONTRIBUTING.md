@@ -15,7 +15,7 @@ Thanks for helping build the open source desktop agent stack.
 - `server/` — FastAPI engine, OpenWorker chat, vision agent
 - `client/` — Web UI (chat + operator fleet view)
 - `personas/` — OpenWorker personality YAML files
-- `playbooks/` — Declarative workflow JSON
+- `playbooks/` — Campaign template JSON (multi-step plans; single-sandbox execution today)
 - `connectors/` — Discord and future channel bots
 - `sandbox-engine/` — Docker desktop image
 - `open_desktop/` — Python SDK
