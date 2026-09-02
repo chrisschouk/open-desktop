@@ -1,0 +1,229 @@
+# OpenDesktop Agent Manifest
+# Machine-readable system catalog for AI agents.
+# Human guide: docs/AGENT_SYSTEM.md
+
+version: "0.3.0"
+system:
+  name: OpenDesktop
+  agent: OpenWorker
+  tagline: Open source desktop agent
+  control_plane: fastapi
+  compute_plane: docker_sandbox
+
+# Abstraction tower (L0 = substrate, L4 = channels)
+layers:
+  L0_substrate:
+    - sessions
+    - messages
+    - machines
+    - audit
+    - health
+    - schedules
+  L1_primitives:
+    - tools
+  L2_capabilities:
+    intents: [chat, browser, research, automate, playbook]
+  L3_procedures:
+    - skills
+    - playbooks
+    - workflows
+  L4_channels:
+    - rest
+    - cli
+    - mcp
+    - gateway
+    - web_ui
+
+# Resource tiers — prefer lowest sufficient tier
+tiers:
+  T0:
+    intent: chat
+    cost: low
+    sandbox: false
+    description: Fast LLM conversation, planning, Q&A
+  T1:
+    intent: browser
+    cost: low
+    sandbox: false
+    description: Web snippets + LLM, no desktop
+  T2:
+    intents: [research, automate]
+    cost: high
+    sandbox: true
+    description: Vision loop on single sandbox
+  T3:
+    intent: playbook
+    cost: high
+    sandbox: true
+    description: T2 with playbook template metadata
+  T4:
+    intent: fleet
+    cost: very_high
+    sandbox: multi
+    status: roadmap
+    description: Multi-machine orchestration
+
+session:
+  states: [idle, working, error]
+  mutex: one_async_job_per_session
+  identifiers:
+    session_id: persistent thread
+    channel_key: external routing key
+    machine_id: ephemeral sandbox body
+
+orient:
+  sequence:
+    - GET /api/v1/health
+    - GET /api/v1/workerhub
+    - GET /api/v1/machines
+  abort_if:
+    - health.api_key_configured == false
+  warn_if:
+    - health.docker.available == false
+
+api:
+  base: /api/v1
+  auth:
+    bearer_token_env: OPENDESKTOP_API_TOKEN
+    required_on: [/gateway/dispatch, /tools/call]
+
+endpoints:
+  orient:
+    - method: GET
+      path: /health
+      purpose: System snapshot — keys, docker, machines
+    - method: GET
+      path: /workerhub
+      purpose: Skills + playbooks catalog
+  session:
+    - method: POST
+      path: /sessions
+      purpose: Create session + greeting
+    - method: GET
+      path: /sessions/{id}
+      purpose: Status + message history (poll while working)
+    - method: POST
+      path: /chat
+      purpose: Primary action — routes by intent
+  compute:
+    - method: GET
+      path: /machines
+      purpose: List sandboxes
+    - method: POST
+      path: /machines
+      purpose: Provision sandbox
+    - method: POST
+      path: /machines/{id}/actions
+      purpose: Direct click/type/bash (recovery)
+  procedures:
+    - method: GET
+      path: /playbooks
+      purpose: Template catalog with execution_mode
+    - method: POST
+      path: /playbooks/run
+      purpose: Background playbook (no session ack)
+    - method: GET
+      path: /skills
+      purpose: Skill triggers
+  observe:
+    - method: GET
+      path: /audit
+      purpose: Hash-chained action log
+  planned:
+    - method: GET
+      path: /agent/orient
+    - method: GET
+      path: /agent/manifest
+    - method: POST
+      path: /agent/plan
+
+websockets:
+  - path: /ws/actions
+    purpose: Action telemetry (preferred over screenshots)
+    subscribe_when: session.status == working
+  - path: /ws/stream/{machine_id}
+    purpose: Screenshot frames
+    cost: high
+    use: human_demo_only
+
+tools:
+  mcp_server: connectors/mcp_server.py
+  registry_path: GET /api/v1/tools
+  items:
+    - name: openworker_chat
+      tier: auto
+      description: Full intent router — preferred entry
+      required: [message]
+      optional: [session_id, persona_id]
+    - name: list_sandboxes
+      tier: none
+      description: Fleet status
+    - name: desktop_screenshot
+      tier: T2
+      description: Debug vision — expensive
+    - name: desktop_click
+      tier: T2
+    - name: desktop_type
+      tier: T2
+    - name: run_playbook
+      tier: T3
+
+cli:
+  binary: openworker
+  commands:
+    - chat
+    - session create
+    - sandboxes list
+    - skills list
+    - hub
+    - playbook run
+  planned: [orient, plan, wait]
+
+playbooks:
+  execution_mode: single_sandbox_template
+  catalog:
+    - id: pb_web_research
+      steps: 4
+    - id: pb_data_entry_rpa
+    - id: pb_lead_gen_campaign
+    - id: pb_music_pr_discovery
+      steps: 5
+      vertical: music_pr
+
+skills:
+  bundled:
+    - id: music-pr-discovery
+      triggers: [music pr, radio plugger, playlist curator]
+      playbook_id: pb_music_pr_discovery
+    - id: web-research
+      triggers: [web research, competitors]
+
+personas:
+  default: openworker
+  path: personas/*.yaml
+
+credentials:
+  recommended:
+    env: OPENROUTER_API_KEY
+    prefix: sk-or-
+    covers: [chat, vision]
+  docs: docs/API_KEYS.md
+
+control_loop:
+  phases: [orient, plan, act, observe, verify, report]
+  poll_interval_seconds: 3-5
+  escalate_tiers: [T0, T1, T2, T3]
+
+invariants:
+  - single_routing_brain
+  - session_mutex
+  - sandboxes_are_cattle
+  - audit_append_only
+  - api_ui_parity
+
+related_docs:
+  - docs/AGENT_SYSTEM.md
+  - docs/ARCHITECTURE.md
+  - docs/AGENT_API.md
+  - docs/ROADMAP.md
+  - docs/BUZZ.md

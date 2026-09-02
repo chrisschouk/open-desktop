@@ -12,13 +12,16 @@ Thanks for helping build the open source desktop agent stack.
 
 ## Project structure
 
-- `server/` — FastAPI engine, OpenWorker chat, vision agent
-- `client/` — Web UI (chat + operator fleet view)
+- `agent/` — **AI agent entry** (`manifest.yaml`, README)
+- `server/` — FastAPI control plane, OpenWorker chat, vision agent
+- `client/` — Human observability UI (agents prefer API/MCP)
 - `personas/` — OpenWorker personality YAML files
-- `playbooks/` — Campaign template JSON (multi-step plans; single-sandbox execution today)
-- `connectors/` — Discord and future channel bots
-- `sandbox-engine/` — Docker desktop image
+- `playbooks/` — Campaign template JSON (L3 procedures)
+- `skills/` — Skill markdown (L3 knowledge)
+- `connectors/` — Discord, Telegram, MCP → gateway
+- `sandbox-engine/` — Docker desktop image (compute plane)
 - `open_desktop/` — Python SDK
+- `docs/` — [Documentation index](docs/README.md) — start at [AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md) for agents
 
 ## Adding a playbook
 
@@ -36,6 +39,9 @@ Thanks for helping build the open source desktop agent stack.
 - Keep changes focused
 - Test locally before submitting
 - Update README if you add config or features
+- **Agent coherence:** new features must route through `ChatService` or `tools`; update `agent/manifest.yaml` if capabilities change
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for agent-accretive priorities.
 
 ## Code of conduct
 

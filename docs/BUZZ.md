@@ -202,3 +202,26 @@ Buzz stays the **workspace**. OpenDesktop stays the **hands**.
 | Moat | Protocol + community + Block | Vertical playbooks + visible desktop |
 
 **One-liner:** Buzz is where the team talks. OpenDesktop is what the agent does when the task needs a real screen.
+
+---
+
+## Agent system alignment
+
+OpenDesktop is designed as a **legible control stack** for AI agents:
+
+| Buzz concept | OpenDesktop equivalent |
+|--------------|------------------------|
+| Nostr relay (source of truth) | Control plane (sessions + audit) |
+| Remote agent body (K8s pod) | Sandbox (`machine_id`) |
+| `buzz-dev-mcp` (code tools) | MCP sandbox tools + `openworker_chat` |
+| YAML workflows | `workflows/*.yaml` + playbooks |
+| `buzz-cli` JSON I/O | `openworker` CLI + REST envelopes |
+
+**Agent cold start on Buzz:**
+
+1. Load OpenDesktop MCP server
+2. Call `openworker_chat` (or read `agent/manifest.yaml` from repo)
+3. Orient: `GET /health` via MCP proxy
+4. Observe: `ws/actions`, not screenshots
+
+Full agent ontology: [AGENT_SYSTEM.md](AGENT_SYSTEM.md)

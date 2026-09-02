@@ -27,17 +27,30 @@ cd client && python3 -m http.server 8888
 
 Open **http://localhost:8888** → OpenWorker Chat tab.
 
+## For AI agents
+
+**Start:** [agent/README.md](agent/README.md) · [agent/manifest.yaml](agent/manifest.yaml) · [docs/AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md)
+
+```
+orient → plan → act → observe → verify
+GET /health → POST /sessions → POST /chat → poll session → report
+```
+
+Prefer MCP `openworker_chat` or CLI `openworker chat`. Full contract: [docs/AGENT_API.md](docs/AGENT_API.md).
+
 ## Architecture
 
 ```
-Channels (Discord, Telegram, Web)
+Control plane (sessions, router, audit)
          ↓
-   Gateway dispatch
+Channels: MCP · CLI · REST · Gateway · Web
          ↓
-OpenWorker (intent router + skills)
-    ↓ chat / browser / desktop
-Desktop Sandbox (Docker XFCE) + vision loop
+OpenWorker tiers: T0 chat → T1 browser → T2 desktop → T3 playbook
+         ↓
+Compute plane (Docker sandboxes) + vision loop
 ```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md)
 
 ## CLI
 
@@ -90,14 +103,23 @@ Or: `docker compose --profile discord up -d`
 
 ## Configuration
 
-See `.env.example`. Key variables:
+See `.env.example` and [docs/API_KEYS.md](docs/API_KEYS.md). One OpenRouter key is enough:
 
 | Variable | Purpose |
 |---|---|
+| `OPENROUTER_API_KEY` | **Recommended** — one key for chat + desktop |
 | `SANDBOX_MODE` | `local` (default) or `remote` |
-| `CHAT_API_KEY` | Fast LLM for conversation |
-| `VISION_API_KEY` | Multimodal model for desktop control |
+| `OPENDESKTOP_API_TOKEN` | Bearer auth for gateway/MCP when exposed |
 | `DEFAULT_PERSONA` | `openworker` (default) |
+
+## Documentation
+
+| Doc | Audience |
+|-----|----------|
+| [docs/README.md](docs/README.md) | Index |
+| [docs/AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md) | AI agents |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Agent-accretive plan |
 
 ## Playbooks
 
