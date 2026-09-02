@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenDesktop | Cloud Desktop Infrastructure for AI Agents</title>
+    <title>OpenDesktop | OpenWorker — Open Source Desktop Agent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -19,18 +19,19 @@
                 </div>
                 <div class="brand-text">
                     <span class="brand-name">OpenDesktop</span>
-                    <span class="brand-tag">Cloud Desktop Infrastructure for AI Agents</span>
+                    <span class="brand-tag">OpenWorker</span>
                 </div>
             </div>
 
             <div class="status-pill">
                 <span class="status-dot"></span>
-                <span>Hetzner Node • Fleet Orchestrator Online</span>
+                <span id="engine-status">Open source desktop agent</span>
             </div>
 
             <div class="nav-actions">
                 <div class="view-mode-toggle">
-                    <button class="btn btn-secondary btn-sm active" id="btn-tab-operator">Operator Fleet</button>
+                    <button class="btn btn-secondary btn-sm active" id="btn-tab-chat">OpenWorker Chat</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-tab-operator">Operator Fleet</button>
                     <button class="btn btn-secondary btn-sm" id="btn-tab-developer">Developer Console</button>
                 </div>
                 <button class="btn btn-secondary" id="btn-api-keys">
@@ -53,8 +54,43 @@
             </div>
         </div>
 
+        <!-- OPENWORKER CHAT (default view) -->
+        <main class="main-content chat-layout" id="container-chat">
+            <section class="chat-panel">
+                <div class="chat-header">
+                    <h2>OpenWorker</h2>
+                    <span class="badge badge-green" id="chat-status-badge">Ready</span>
+                </div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="chat-chips">
+                    <button class="chip-btn chat-chip" data-prompt="Research 10 UK indie radio pluggers for a rock release">UK radio pluggers</button>
+                    <button class="chip-btn chat-chip" data-prompt="Find playlist curators on SubmitHub for electronic music">Playlist curators</button>
+                    <button class="chip-btn chat-chip" data-prompt="What can you actually do?">What can you do?</button>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="chat-input" class="text-input textarea-input" rows="2" placeholder="Tell OpenWorker what you need done…"></textarea>
+                    <button class="btn btn-primary" id="btn-chat-send">Send</button>
+                </div>
+            </section>
+            <aside class="chat-side-panel">
+                <div class="live-preview">
+                    <div class="live-preview-header">
+                        <span>Live Desktop</span>
+                        <span class="badge badge-purple">SANDBOX</span>
+                    </div>
+                    <img id="chat-live-screen" alt="Live sandbox screen" src="" />
+                </div>
+                <div class="card log-card">
+                    <div class="card-header">
+                        <div class="card-title">Action Stream</div>
+                    </div>
+                    <div class="card-body log-feed" id="chat-log-feed" style="max-height:200px; overflow-y:auto;"></div>
+                </div>
+            </aside>
+        </main>
+
         <!-- OPERATOR VIEW CONTAINER -->
-        <main class="main-content" id="container-operator">
+        <main class="main-content" id="container-operator" style="display: none;">
             <!-- Multi-Agent Screen Grid Section -->
             <section class="viewport-section" id="grid-viewport-section">
                 <div class="grid-card-wrapper">
@@ -220,6 +256,7 @@ session.finish()</pre>
         </div>
     </div>
 
+    <script src="chat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

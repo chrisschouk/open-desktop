@@ -23,8 +23,10 @@ const btnApiKeys = document.getElementById("btn-api-keys");
 const btnCloseModal = document.getElementById("btn-close-modal");
 
 // Navigation Tabs
+const btnTabChat = document.getElementById("btn-tab-chat");
 const btnTabOperator = document.getElementById("btn-tab-operator");
 const btnTabDeveloper = document.getElementById("btn-tab-developer");
+const containerChat = document.getElementById("container-chat");
 const containerOperator = document.getElementById("container-operator");
 const containerDeveloper = document.getElementById("container-developer");
 
@@ -189,17 +191,20 @@ class ActionStream {
     
     renderLogStep(s) {
         if (!logFeed) return;
-        const item = document.createElement("div");
-        item.className = "log-item fade-in";
-        const actName = s.action_type || "action";
-        item.innerHTML = `
-            <div class="log-item-header">
-                <span class="log-step-num">STEP ${s.step || '-'} [${s.agent || s.machine_id || 'Agent'}]</span>
-                <span class="log-action-tag">${actName.toUpperCase()}</span>
-            </div>
-            <div class="log-thought">${s.thought || ''}</div>
-        `;
-        logFeed.prepend(item);
+        const chatLog = document.getElementById("chat-log-feed");
+        [logFeed, chatLog].filter(Boolean).forEach(feed => {
+            const item = document.createElement("div");
+            item.className = "log-item fade-in";
+            const actName = s.action_type || "action";
+            item.innerHTML = `
+                <div class="log-item-header">
+                    <span class="log-step-num">STEP ${s.step || '-'} [${s.agent || s.machine_id || 'Agent'}]</span>
+                    <span class="log-action-tag">${actName.toUpperCase()}</span>
+                </div>
+                <div class="log-thought">${s.thought || ''}</div>
+            `;
+            feed.prepend(item);
+        });
     }
 }
 
@@ -209,8 +214,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
     setupEventListeners();
+    setMainTab("chat");
+    initChat();
     fetchMachines();
     actionStream = new ActionStream();
+    fetchEngineStatus();
+}
+
+async function fetchEngineStatus() {
+    try {
+        const res = await fetch("http://localhost:8000/");
+        const data = await res.json();
+        const el = document.getElementById("engine-status");
+        if (el) el.textContent = `${data.agent || "OpenWorker"} • ${data.sandbox_mode || "local"} mode`;
+    } catch (e) { /* server offline */ }
 }
 
 function setupEventListeners() {
@@ -223,10 +240,9 @@ function setupEventListeners() {
     if (btnRunAgent) btnRunAgent.addEventListener("click", () => runCampaign());
     if (btnAddComputer) btnAddComputer.addEventListener("click", () => createMachine());
 
-    if (btnTabOperator && btnTabDeveloper) {
-        btnTabOperator.addEventListener("click", () => setMainTab("operator"));
-        btnTabDeveloper.addEventListener("click", () => setMainTab("developer"));
-    }
+    if (btnTabChat) btnTabChat.addEventListener("click", () => setMainTab("chat"));
+    if (btnTabOperator) btnTabOperator.addEventListener("click", () => setMainTab("operator"));
+    if (btnTabDeveloper) btnTabDeveloper.addEventListener("click", () => setMainTab("developer"));
 
     if (btnApiKeys) btnApiKeys.addEventListener("click", () => modalApi.classList.add("open"));
     if (btnCloseModal) btnCloseModal.addEventListener("click", () => modalApi.classList.remove("open"));
@@ -277,17 +293,13 @@ function setupEventListeners() {
 }
 
 function setMainTab(tab) {
-    if (tab === "operator") {
-        containerOperator.style.display = "grid";
-        containerDeveloper.style.display = "none";
-        btnTabOperator.classList.add("active");
-        btnTabDeveloper.classList.remove("active");
-    } else {
-        containerOperator.style.display = "none";
-        containerDeveloper.style.display = "grid";
-        btnTabOperator.classList.remove("active");
-        btnTabDeveloper.classList.add("active");
-    }
+    const show = (el, visible) => { if (el) el.style.display = visible ? "grid" : "none"; };
+    show(containerChat, tab === "chat");
+    show(containerOperator, tab === "operator");
+    show(containerDeveloper, tab === "developer");
+    if (btnTabChat) btnTabChat.classList.toggle("active", tab === "chat");
+    if (btnTabOperator) btnTabOperator.classList.toggle("active", tab === "operator");
+    if (btnTabDeveloper) btnTabDeveloper.classList.toggle("active", tab === "developer");
 }
 
 async function fetchMachines() {

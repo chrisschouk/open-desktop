@@ -9,9 +9,7 @@ import base64
 import aiohttp
 from typing import Optional, Callable, List
 
-VISION_API_KEY = os.getenv("VISION_API_KEY", os.getenv("API_KEY", ""))
-API_URL = os.getenv("VISION_API_URL", "https://api.openai.com/v1/chat/completions")
-MODEL_NAME = os.getenv("VISION_MODEL", "gpt-4o-mini")
+from .config import VISION_API_KEY, VISION_API_URL, VISION_MODEL, MAX_VISION_STEPS
 
 AGENT_SYSTEM_PROMPT = """You are a computer-use AI agent operating a real Linux desktop.
 You can see the screen via screenshots and control the computer with these actions:
@@ -52,7 +50,7 @@ class AgentRunner:
 
     def __init__(self):
         self.conversation_history: List[dict] = []
-        self.max_steps = 25
+        self.max_steps = MAX_VISION_STEPS
         self.step_count = 0
 
     async def _call_vision_model(self, screenshot_b64: str, user_message: str = "") -> dict:
@@ -88,16 +86,16 @@ class AgentRunner:
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             }
-            model = os.getenv("VISION_MODEL", "gpt-4o-mini")
+            model = os.getenv("VISION_MODEL", VISION_MODEL)
         else:
-            url = API_URL
+            url = os.getenv("VISION_API_URL", VISION_API_URL)
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://opendesktop.chrisscho.uk",
-                "X-Title": "OpenDesktop Agent",
+                "HTTP-Referer": "https://github.com/totalaudiopromo/open-desktop",
+                "X-Title": "OpenDesktop OpenWorker",
             }
-            model = os.getenv("VISION_MODEL", MODEL_NAME)
+            model = os.getenv("VISION_MODEL", VISION_MODEL)
 
         payload = {
             "model": model,

@@ -1,29 +1,30 @@
 # OpenDesktop System Architecture
 
-> **Cloud Desktop Infrastructure & Sandbox Engine for Autonomous AI Agents**
+> **Open source desktop agent platform — OpenWorker does the talking and the doing.**
 
-OpenDesktop provides a fleet of isolated, containerized Linux desktop environments accessible via REST APIs, WebSockets, and the `open_desktop` Python SDK.
+OpenDesktop provides isolated, containerized Linux desktop environments. **OpenWorker** is the conversational agent that routes chat vs automation and drives the vision control loop.
 
 ---
 
 ## 1. Core Architecture
 
-- **Persistent Desktop Sandboxes**: Full Linux userland environments with XFCE4, Google Chrome, VS Code, Obsidian, terminal tools, and local storage.
-- **Provider-Agnostic Engine**: Drive desktops using vision-capable model providers via standard multimodal APIs.
-- **Multi-Machine Fleet Orchestration**: Declarative playbooks that coordinate specialized machine roles (`ops_machine`, `rpa_machine`, `vault_machine`).
+- **OpenWorker Chat Layer**: Intent router (chat / research / automate / playbook) + session memory
+- **Persistent Desktop Sandboxes**: XFCE4, Chrome, VS Code, Obsidian in Docker
+- **Provider-Agnostic Engine**: Any OpenAI-compatible chat + vision API (OpenAI, Groq, Ollama)
+- **Playbook Engine**: Declarative JSON workflows for lead gen, web research, music PR
 
 ---
 
 ## 2. Platform Positioning
 
-- **Specialized Computer-Use Sandbox**: Purpose-built for AI computer-use loops with low-latency screenshot streaming and isolated X11 display sandboxing (`DISPLAY=:1`).
-- **Full OS Environment**: Supports desktop applications, local binaries, and terminal workflows beyond simple headless browser automation.
-- **Decoupled Architecture**: Clean separation between control plane (FastAPI engine) and execution runtime (isolated Docker containers).
+- **Grok-style chat** that actually spins up a desktop when needed
+- **Self-hosted** — local Docker by default, optional remote VPS mode
+- **Music industry wedge** — built-in PR discovery and lead gen playbooks
 
 ---
 
 ## 3. Primary Execution Patterns
 
-1. **Vision-Driven Desktop Control**: Pass desktop screenshots to multimodal models and execute precise input events (`click`, `type`, `drag`, `press`).
-2. **Autonomous Agent Execution**: Run CLI tools and background workers directly inside the container environment.
-3. **Cross-Application Automation**: Automate data transfer across web interfaces and desktop software lacking native REST APIs.
+1. **Chat** — fast LLM, no sandbox (questions, planning)
+2. **Vision-Driven Desktop Control** — screenshots → multimodal model → click/type/bash
+3. **Playbook Campaigns** — multi-step workflows with fleet orchestration

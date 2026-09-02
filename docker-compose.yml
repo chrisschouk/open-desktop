@@ -1,42 +1,61 @@
 version: '3.8'
 
 services:
-  # OpenOrgo Orchestrator & API Server
   server:
     build:
-      context: ./server
-      dockerfile: Dockerfile
-    container_name: openorgo-server
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: opendesktop-server
     ports:
       - "8000:8000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      - ./personas:/app/personas
+      - ./playbooks:/app/playbooks
+    env_file:
+      - .env
     environment:
-      - VISION_API_ENDPOINT=${VISION_API_ENDPOINT:-https://api.openai.com/v1/chat/completions}
-      - VISION_MODEL=${VISION_MODEL:-gpt-4o-mini}
-      - VISION_API_KEY=${VISION_API_KEY:-}
+      - SANDBOX_MODE=local
+      - OPENDESKTOP_DATA_DIR=/app/data
+      - AUTO_PROVISION_FLEET=false
     restart: unless-stopped
 
-  # Default Computer Sandbox Node Container
   sandbox-node-1:
     build:
       context: ./sandbox-engine
       dockerfile: Dockerfile.sandbox
-    container_name: openorgo-sandbox-1
+    container_name: opendesktop-sandbox-1
     ports:
-      - "6080:6080" # noVNC WebSocket Stream
-      - "8000:8000" # Internal Agent Control Daemon
+      - "6080:6080"
     environment:
       - SCREEN_WIDTH=1280
       - SCREEN_HEIGHT=800
+    profiles:
+      - sandbox
     restart: unless-stopped
 
-  # Frontend Dashboard Web App
   dashboard:
     image: nginx:alpine
-    container_name: openorgo-dashboard
+    container_name: opendesktop-dashboard
     ports:
-      - "80:80"
+      - "8888:80"
     volumes:
       - ./client:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+  discord:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: opendesktop-discord
+    command: python connectors/discord_bot.py
+    env_file:
+      - .env
+    environment:
+      - OPENDESKTOP_API_URL=http://server:8000
+    depends_on:
+      - server
+    profiles:
+      - discord
     restart: unless-stopped
