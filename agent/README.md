@@ -11,14 +11,15 @@ Start here:
 ## Cold start (30 seconds)
 
 ```bash
-curl -s localhost:8000/api/v1/health
-openworker hub    # or: curl localhost:8000/api/v1/workerhub
+openworker orient
+# or: curl -s localhost:8000/api/v1/agent/orient
+openworker plan "your task here"   # dry-run tier before spending
 ```
 
 ## Golden path
 
 ```
-POST /sessions → POST /chat → poll GET /sessions/:id until idle
+POST /sessions → openworker plan "…" → POST /chat → openworker wait sess_…
 ```
 
 Prefer MCP tool `openworker_chat` when available.

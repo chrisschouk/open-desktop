@@ -132,10 +132,13 @@ endpoints:
   planned:
     - method: GET
       path: /agent/orient
+      status: implemented
     - method: GET
       path: /agent/manifest
+      status: implemented
     - method: POST
       path: /agent/plan
+      status: implemented
 
 websockets:
   - path: /ws/actions
@@ -150,6 +153,12 @@ tools:
   mcp_server: connectors/mcp_server.py
   registry_path: GET /api/v1/tools
   items:
+    - name: openworker_orient
+      tier: none
+      description: One-call bootstrap — health, machines, sessions, hub
+    - name: openworker_plan
+      tier: none
+      description: Dry-run intent/tier without execution
     - name: openworker_chat
       tier: auto
       description: Full intent router — preferred entry
@@ -177,7 +186,7 @@ cli:
     - skills list
     - hub
     - playbook run
-  planned: [orient, plan, wait]
+  planned: []
 
 playbooks:
   execution_mode: single_sandbox_template

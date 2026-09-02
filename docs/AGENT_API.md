@@ -33,14 +33,17 @@ MCP: `OPENDESKTOP_API_URL` + optional `OPENDESKTOP_API_TOKEN`.
 ## 3. Orientation sequence (run on every cold start)
 
 ```bash
-# 1. System snapshot (~50 tokens)
-curl -s localhost:8000/api/v1/health
+openworker orient
+# or
+curl -s localhost:8000/api/v1/agent/orient
+```
 
-# 2. Machine-readable catalog (read from repo or future /agent/manifest endpoint)
-# agent/manifest.yaml
+Returns health, machines, recent sessions, working count, hub summary, and `next` hints.
 
-# 3. Optional: WorkerHub bundle
-curl -s localhost:8000/api/v1/workerhub
+Optional dry-run before spending:
+
+```bash
+openworker plan "Research UK radio pluggers"
 ```
 
 **Abort if** `api_key_configured: false` — cannot proceed past T0 without keys.
@@ -69,28 +72,18 @@ POST /api/v1/chat
 {"message": "…", "session_id": "sess_…"}
 ```
 
-**Current response shape:**
-
-```json
-{
-  "session_id": "sess_…",
-  "intent": "research|chat|browser|playbook|automate|busy",
-  "reply": "assistant text",
-  "status": "idle|working"
-}
-```
-
-**Target envelope (roadmap — agents should expect these fields):**
+**Current response shape** (all `/chat` responses):
 
 ```json
 {
   "ok": true,
+  "trace_id": "tr_…",
   "session_id": "sess_…",
   "intent": "research",
   "tier": "T2",
+  "estimated_cost": "high",
   "status": "working",
   "reply": "On it — spinning up a desktop…",
-  "machine_id": "sbx_…",
   "observe": {
     "session": "/api/v1/sessions/sess_…",
     "machines": "/api/v1/machines",
@@ -99,6 +92,8 @@ POST /api/v1/chat
   "next": ["poll_session", "subscribe_actions"]
 }
 ```
+
+Legacy fields (`session_id`, `intent`, `reply`, `status`) remain at top level for compatibility.
 
 ### 4.3 Observe while `working`
 
@@ -182,9 +177,9 @@ openworker playbook run pb_music_pr_discovery --prompt "…"
 **Planned:**
 
 ```bash
-openworker orient          # health + machines + hub summary
-openworker plan "message"  # dry-run intent/tier only
-openworker wait sess_…     # poll until idle, JSON exit code
+openworker orient          # ✅ shipped
+openworker plan "…"        # ✅ shipped
+openworker wait sess_…     # ✅ shipped
 ```
 
 ---
@@ -257,13 +252,12 @@ Or: `./scripts/demo_music_pr.sh`
 
 ---
 
-## 12. Roadmap: agent-native endpoints
+## 12. Agent-native endpoints
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET /api/v1/agent/manifest` | Serve `agent/manifest.yaml` JSON |
-| `POST /api/v1/agent/plan` | Dry-run classify; no execution |
-| `GET /api/v1/agent/orient` | health + machines + sessions summary |
-| `POST /api/v1/chat` + envelope | `observe`, `next`, `tier`, `trace_id` |
+| `GET /api/v1/agent/orient` | ✅ One-call bootstrap |
+| `GET /api/v1/agent/manifest` | ✅ Machine-readable catalog |
+| `POST /api/v1/agent/plan` | ✅ Dry-run classify |
 
-See [ROADMAP.md](ROADMAP.md) for implementation phases.
+See [ROADMAP.md](ROADMAP.md) Phase D for MCP resources and streaming.

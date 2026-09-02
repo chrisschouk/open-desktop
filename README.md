@@ -55,9 +55,11 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/AGENT_SYSTEM.md](docs/
 ## CLI
 
 ```bash
-python cli/openworker.py chat "Research UK radio pluggers"
-python cli/openworker.py playbook run pb_music_pr_discovery --prompt "indie rock"
-python cli/openworker.py hub
+openworker orient                              # system snapshot
+openworker plan "Research UK radio pluggers"   # dry-run tier
+openworker chat "Research UK radio pluggers"
+openworker wait sess_abc                       # poll until idle
+openworker hub
 ```
 
 ## Buzz / MCP integration
