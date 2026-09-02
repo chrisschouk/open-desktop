@@ -38,6 +38,22 @@ OpenWorker (intent router + skills)
 Desktop Sandbox (Docker XFCE) + vision loop
 ```
 
+## CLI
+
+```bash
+python cli/openworker.py chat "Research UK radio pluggers"
+python cli/openworker.py playbook run pb_music_pr_discovery --prompt "indie rock"
+python cli/openworker.py hub
+```
+
+## Buzz / MCP integration
+
+```bash
+OPENDESKTOP_API_URL=http://localhost:8000 python connectors/mcp_server.py
+```
+
+See [docs/BUZZ.md](docs/BUZZ.md) and [docs/WORKERHUB.md](docs/WORKERHUB.md).
+
 ## Brand
 
 - **OpenDesktop** — platform & engine

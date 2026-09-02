@@ -1,7 +1,7 @@
 """
-Lifecycle hooks — observe or gate agent runs (OpenClaw-inspired, minimal).
+Lifecycle hooks — observe or gate agent runs.
 """
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Awaitable, Callable, Dict, List, Optional
 
 HookHandler = Callable[[dict], Awaitable[Optional[dict]]]
 
@@ -20,7 +20,6 @@ def on(hook_name: str, handler: HookHandler):
 
 
 async def emit(hook_name: str, payload: dict) -> dict:
-    """Run hooks in order; handlers may mutate/return payload. Return False in payload to block."""
     data = dict(payload)
     for handler in _registry.get(hook_name, []):
         try:
@@ -41,6 +40,14 @@ async def _log_hook(payload: dict) -> dict:
     return payload
 
 
-# Default observability hook
+async def _audit_hook(payload: dict) -> dict:
+    from .audit import append_audit
+    event = payload.get("action_type") or payload.get("intent") or "agent_event"
+    append_audit(str(event), {k: v for k, v in payload.items() if k != "_block"})
+    return payload
+
+
 on("before_agent_run", _log_hook)
 on("after_agent_run", _log_hook)
+on("before_agent_run", _audit_hook)
+on("after_agent_run", _audit_hook)

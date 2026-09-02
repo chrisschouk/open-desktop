@@ -14,6 +14,8 @@ COPY server /app/server
 COPY personas /app/personas
 COPY playbooks /app/playbooks
 COPY skills /app/skills
+COPY workflows /app/workflows
+COPY cli /app/cli
 COPY connectors /app/connectors
 COPY open_desktop /app/open_desktop
 

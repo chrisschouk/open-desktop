@@ -23,7 +23,8 @@ from .chat_service import chat_service
 from .persona import get_greeting, load_persona
 from .playbook_executor import list_playbooks
 from .config import AUTO_PROVISION_FLEET, SANDBOX_MODE, SCHEDULER_ENABLED
-from .runtime import verify_api_token
+from .workerhub import get_workerhub_catalog
+from .audit import init_audit, list_audit, verify_chain
 from .skills import list_skills_catalog
 from .tools import list_tools, call_tool
 from .gateway import dispatch as gateway_dispatch
@@ -188,6 +189,7 @@ class ToolCallRequest(BaseModel):
 async def startup_event():
     """Initialize DB, scheduler, and optionally provision default fleet."""
     memory.init_db()
+    init_audit()
     init_schedules()
     if SCHEDULER_ENABLED:
         asyncio.create_task(scheduler_loop(manager.broadcast_action))
@@ -380,6 +382,16 @@ def get_skills():
 @app.get("/api/v1/tools")
 def get_tools():
     return {"tools": list_tools()}
+
+
+@app.get("/api/v1/workerhub")
+def workerhub_catalog():
+    return get_workerhub_catalog()
+
+
+@app.get("/api/v1/audit")
+def get_audit_log():
+    return {"entries": list_audit(), "chain": verify_chain()}
 
 
 @app.post("/api/v1/tools/call")
