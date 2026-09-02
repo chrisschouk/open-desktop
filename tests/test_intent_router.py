@@ -13,7 +13,12 @@ def test_heuristic_playbook_music_pr():
 
 
 def test_heuristic_browser_lookup():
-    result = _heuristic_classify("What is a radio plugger?")
+    result = _heuristic_classify("What is SubmitHub?")
+    assert result["intent"] == "browser"
+
+
+def test_submithub_not_automate():
+    result = _heuristic_classify("What is SubmitHub pricing?")
     assert result["intent"] == "browser"
 
 

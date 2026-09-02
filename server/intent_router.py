@@ -82,6 +82,13 @@ def _parse_router_response(text: str, original_message: str) -> dict:
     return _heuristic_classify(original_message)
 
 
+def _contains_word(text: str, word: str) -> bool:
+    """Match whole words/phrases so 'submithub' does not trigger 'submit'."""
+    if " " in word:
+        return word in text
+    return re.search(rf"\b{re.escape(word)}\b", text) is not None
+
+
 def _heuristic_classify(message: str) -> dict:
     lower = message.lower()
 
@@ -96,8 +103,9 @@ def _heuristic_classify(message: str) -> dict:
         if phrase in lower:
             return {"intent": "playbook", "playbook_id": pb_id, "task_prompt": message}
 
+    automate_blockers = ["fill", "submit", "sign up", "automate"]
     simple_lookup = ["what is", "who is", "when did", "how much", "define ", "quick"]
-    if any(w in lower for w in simple_lookup) and not any(w in lower for w in ["fill", "submit", "sign up", "automate"]):
+    if any(w in lower for w in simple_lookup) and not any(_contains_word(lower, w) for w in automate_blockers):
         return {"intent": "browser", "playbook_id": None, "task_prompt": message}
 
     action_words = [
@@ -105,8 +113,8 @@ def _heuristic_classify(message: str) -> dict:
         "fill", "submit", "sign up", "download", "scrape", "automate",
         "go to", "navigate", "click", "export",
     ]
-    if any(w in lower for w in action_words):
-        intent = "automate" if any(w in lower for w in ["fill", "submit", "sign up", "automate", "click"]) else "research"
+    if any(_contains_word(lower, w) for w in action_words):
+        intent = "automate" if any(_contains_word(lower, w) for w in automate_blockers + ["click"]) else "research"
         return {"intent": intent, "playbook_id": None, "task_prompt": message}
 
     return {"intent": "chat", "playbook_id": None, "task_prompt": None}

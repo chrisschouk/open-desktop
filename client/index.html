@@ -102,7 +102,7 @@
                     <div class="grid-header">
                         <h3>Fleet Control Plane - Multi-Sandbox Execution Grid</h3>
                         <div style="display:flex; gap:8px;">
-                            <span class="badge badge-purple" id="badge-active-playbook">PLAYBOOK: WEB RESEARCH</span>
+                            <span class="badge badge-purple" id="badge-active-playbook">TEMPLATE: WEB RESEARCH</span>
                             <span class="badge badge-green">MACHINES RUNNING</span>
                         </div>
                     </div>
@@ -124,14 +124,17 @@
                     </div>
 
                     <div class="card-body">
+                        <p class="input-hint" style="margin-bottom:12px; color:var(--text-secondary); font-size:0.8rem;">
+                            Campaign templates describe multi-step workflows. Today they run on <strong>one sandbox</strong> with steps injected into the vision agent prompt — fleet routing is on the roadmap.
+                        </p>
                         <!-- Playbook Category Filter & Selector -->
                         <div class="prompt-group">
-                            <label class="input-label">Select Declarative Playbook</label>
+                            <label class="input-label">Select Campaign Template</label>
                             <select id="playbook-select" class="text-input">
-                                <option value="pb_web_research">Web Research & Intelligence (pb_web_research)</option>
-                                <option value="pb_data_entry_rpa">Cross-App RPA Automation (pb_data_entry_rpa)</option>
-                                <option value="pb_lead_gen_campaign">Multi-Agent Lead Generation (pb_lead_gen_campaign)</option>
-                                <option value="pb_music_pr_discovery">Music PR Discovery & Research (pb_music_pr_discovery)</option>
+                                <option value="pb_web_research">Web Research (4 steps · single sandbox)</option>
+                                <option value="pb_data_entry_rpa">Cross-App RPA (template)</option>
+                                <option value="pb_lead_gen_campaign">Lead Generation (template)</option>
+                                <option value="pb_music_pr_discovery">Music PR Discovery (5 steps · single sandbox)</option>
                             </select>
                         </div>
 
@@ -163,7 +166,7 @@
                         </div>
 
                         <button class="btn btn-primary btn-full" id="btn-run-agent">
-                            Execute Fleet Campaign
+                            Run Campaign Template
                         </button>
                     </div>
                 </div>

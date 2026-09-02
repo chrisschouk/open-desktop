@@ -24,21 +24,21 @@ class Machine:
     def click_left(self, x: int, y: int) -> dict:
         """Perform a left mouse click at (x, y)."""
         url = f"{self.base_url}/api/v1/machines/{self.machine_id}/actions"
-        payload = {"type": "click", "x": x, "y": y, "button": "left"}
+        payload = {"action": "click", "x": x, "y": y, "button": "left"}
         res = requests.post(url, json=payload, headers=self.headers, timeout=10)
         return res.json()
 
     def keyboard_type(self, text: str) -> dict:
         """Type text into active input field."""
         url = f"{self.base_url}/api/v1/machines/{self.machine_id}/actions"
-        payload = {"type": "type", "text": text}
+        payload = {"action": "type", "text": text}
         res = requests.post(url, json=payload, headers=self.headers, timeout=10)
         return res.json()
 
     def run_shell(self, command: str) -> dict:
         """Run bash command inside the sandbox."""
         url = f"{self.base_url}/api/v1/machines/{self.machine_id}/actions"
-        payload = {"type": "shell", "command": command}
+        payload = {"action": "bash", "command": command}
         res = requests.post(url, json=payload, headers=self.headers, timeout=30)
         return res.json()
 
