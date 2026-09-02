@@ -16,6 +16,7 @@ from .browser_research import browser_research
 from . import hooks
 from .runtime import ensure_running_sandbox
 from .audit import append_audit
+from .sandbox_status import get_sandbox_status, should_fallback_desktop
 
 
 class ChatService:
@@ -77,6 +78,25 @@ class ChatService:
                 "forced": bool(force_intent),
             })
 
+        sandbox_status = await get_sandbox_status()
+        fallback = False
+        original_intent = None
+        if should_fallback_desktop(intent, force_intent, sandbox_status):
+            original_intent = intent
+            fallback = True
+            intent = "browser"
+            classification["intent"] = "browser"
+            classification["fallback"] = True
+            classification["original_intent"] = original_intent
+            if trace_id:
+                append_audit("chat_fallback", {
+                    "trace_id": trace_id,
+                    "session_id": session_id,
+                    "original_intent": original_intent,
+                    "fallback_intent": "browser",
+                    "reason": sandbox_status.get("reason"),
+                })
+
         if intent == "chat":
             skill_ctx = skills_context_for_message(message)
             enriched = f"{skill_ctx}\n\n{message}" if skill_ctx else message
@@ -94,17 +114,34 @@ class ChatService:
 
         if intent == "browser":
             reply = await browser_research(message, persona_id)
-            memory.add_message(session_id, "assistant", reply, {
-                "intent": "browser", "status": "idle", "trace_id": trace_id,
-            })
+            if fallback:
+                prefix = (
+                    "Desktop sandbox isn't available right now "
+                    f"({sandbox_status.get('reason', 'unavailable')}) — "
+                    "running browser research instead.\n\n"
+                )
+                reply = prefix + reply
+            meta = {
+                "intent": "browser",
+                "status": "idle",
+                "trace_id": trace_id,
+            }
+            if fallback:
+                meta["fallback"] = True
+                meta["original_intent"] = original_intent
+            memory.add_message(session_id, "assistant", reply, meta)
             memory.update_session(session_id, status="idle")
-            return {
+            result = {
                 "session_id": session_id,
                 "intent": "browser",
                 "reply": reply,
                 "status": "idle",
                 "trace_id": trace_id,
             }
+            if fallback:
+                result["fallback"] = True
+                result["original_intent"] = original_intent
+            return result
 
         task_prompt = classification.get("task_prompt") or message
         playbook_id = classification.get("playbook_id") or skill_playbook

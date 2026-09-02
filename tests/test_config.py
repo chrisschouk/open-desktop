@@ -26,3 +26,5 @@ def test_apply_llm_api_key_sets_openrouter_defaults(monkeypatch):
     assert os.environ["CHAT_API_KEY"] == "sk-or-v1-from-ui"
     assert os.environ["VISION_API_KEY"] == "sk-or-v1-from-ui"
     assert os.environ["OPENROUTER_API_KEY"] == "sk-or-v1-from-ui"
+    assert os.environ.get("CHAT_MODEL") == "deepseek/deepseek-v4-flash"
+    assert os.environ.get("VISION_MODEL") == "google/gemini-2.0-flash-001"

@@ -49,7 +49,9 @@ Open http://localhost:8888 — OpenWorker Chat is the default tab.
 curl http://localhost:8000/api/v1/health | jq
 ```
 
-Returns `api_key_configured`, `docker.available`, sandbox mode, and machine counts.
+Returns `api_key_configured`, `sandbox_available`, `sandbox_mode`, and machine counts.
+
+**No local Docker?** Set `SANDBOX_MODE=remote` + `HETZNER_HOST` — see [HETZNER.md](HETZNER.md). Or set `SANDBOX_ENABLED=false` for chat + browser only (desktop intents auto-downgrade).
 
 ---
 
@@ -131,4 +133,5 @@ Tools include `openworker_chat` (conversational agent), `desktop_click`, `run_pl
 
 - Set `OPENDESKTOP_API_TOKEN` to require Bearer auth on `/api/v1/gateway/dispatch` and `/api/v1/tools/call`
 - Set `AUTO_PROVISION_FLEET=false` (default) unless you want two machines on startup
-- Use `SANDBOX_MODE=remote` with `HETZNER_HOST` for VPS deployments
+- Use `SANDBOX_MODE=remote` with `HETZNER_HOST` for VPS deployments — [HETZNER.md](HETZNER.md)
+- Set `SANDBOX_ENABLED=false` to run without any Docker (browser fallback for desktop tasks)
