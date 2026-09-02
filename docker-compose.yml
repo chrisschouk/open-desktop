@@ -59,3 +59,19 @@ services:
     profiles:
       - discord
     restart: unless-stopped
+
+  telegram:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: opendesktop-telegram
+    command: python connectors/telegram_bot.py
+    env_file:
+      - .env
+    environment:
+      - OPENDESKTOP_API_URL=http://server:8000
+    depends_on:
+      - server
+    profiles:
+      - telegram
+    restart: unless-stopped
