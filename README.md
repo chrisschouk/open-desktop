@@ -54,6 +54,10 @@ OPENDESKTOP_API_URL=http://localhost:8000 python connectors/mcp_server.py
 
 See [docs/BUZZ.md](docs/BUZZ.md) and [docs/WORKERHUB.md](docs/WORKERHUB.md).
 
+## Demo
+
+Music PR golden path: [docs/DEMO.md](docs/DEMO.md) · `./scripts/demo_music_pr.sh`
+
 ## Brand
 
 - **OpenDesktop** — platform & engine
