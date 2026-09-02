@@ -223,11 +223,43 @@ function initApp() {
 
 async function fetchEngineStatus() {
     try {
-        const res = await fetch("http://localhost:8000/");
+        const res = await fetch(`${API_BASE}/health`);
         const data = await res.json();
         const el = document.getElementById("engine-status");
-        if (el) el.textContent = `${data.agent || "OpenWorker"} • ${data.sandbox_mode || "local"} mode`;
-    } catch (e) { /* server offline */ }
+        if (el) {
+            const dockerOk = data.docker?.available ? "docker ok" : "docker unavailable";
+            el.textContent = `${data.agent || "OpenWorker"} • ${data.sandbox_mode || "local"} • ${dockerOk}`;
+        }
+        updateSetupBanner(data);
+    } catch (e) {
+        const banner = document.getElementById("setup-banner");
+        const text = document.getElementById("setup-banner-text");
+        if (banner && text) {
+            text.textContent = "OpenDesktop API offline — start uvicorn server.main:app on port 8000";
+            banner.hidden = false;
+        }
+    }
+}
+
+function updateSetupBanner(health) {
+    const banner = document.getElementById("setup-banner");
+    const text = document.getElementById("setup-banner-text");
+    if (!banner || !text) return;
+    if (sessionStorage.getItem("opendesktop-banner-dismissed") === "1") {
+        banner.hidden = true;
+        return;
+    }
+    if (!health.api_key_configured) {
+        text.textContent = "No LLM API key configured — add CHAT_API_KEY in .env or use API Key Settings.";
+        banner.hidden = false;
+        return;
+    }
+    if (!health.docker?.available) {
+        text.textContent = "Docker is not available — sandbox automation requires Docker.";
+        banner.hidden = false;
+        return;
+    }
+    banner.hidden = true;
 }
 
 function setupEventListeners() {
@@ -247,6 +279,19 @@ function setupEventListeners() {
     if (btnApiKeys) btnApiKeys.addEventListener("click", () => modalApi.classList.add("open"));
     if (btnCloseModal) btnCloseModal.addEventListener("click", () => modalApi.classList.remove("open"));
 
+    const btnBannerKey = document.getElementById("btn-banner-api-key");
+    if (btnBannerKey && modalApi) {
+        btnBannerKey.addEventListener("click", () => modalApi.classList.add("open"));
+    }
+    const btnDismissBanner = document.getElementById("btn-dismiss-banner");
+    if (btnDismissBanner) {
+        btnDismissBanner.addEventListener("click", () => {
+            sessionStorage.setItem("opendesktop-banner-dismissed", "1");
+            const banner = document.getElementById("setup-banner");
+            if (banner) banner.hidden = true;
+        });
+    }
+
     // Helper function to save API Key to backend
     async function saveKey(keyVal, statusEl) {
         if (!keyVal) return;
@@ -262,6 +307,7 @@ function setupEventListeners() {
                     statusEl.style.display = "block";
                     setTimeout(() => { statusEl.style.display = "none"; }, 2000);
                 }
+                fetchEngineStatus();
                 return true;
             }
         } catch (e) {

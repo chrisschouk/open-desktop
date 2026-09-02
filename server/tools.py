@@ -44,6 +44,7 @@ def _register_builtin_tools():
     from .sandbox_factory import sandbox_manager
     from .playbook_executor import run_playbook, list_playbooks
     from .agent_runner import agent_runner
+    from .chat_service import chat_service
 
     async def desktop_screenshot(machine_id: str) -> dict:
         b64 = await sandbox_manager.get_screenshot_base64(machine_id)
@@ -60,6 +61,19 @@ def _register_builtin_tools():
 
     async def run_playbook_tool(playbook_id: str, prompt: str) -> dict:
         return await run_playbook(playbook_id, prompt, sandbox_manager, agent_runner, None)
+
+    async def openworker_chat(message: str, session_id: str = None, persona_id: str = "openworker") -> dict:
+        """Buzz-friendly chat entry — routes through OpenWorker intent layer."""
+        from . import memory
+        if session_id:
+            session = memory.get_session(session_id)
+            if not session:
+                raise ValueError(f"Unknown session_id: {session_id}")
+            sid = session_id
+        else:
+            session = memory.create_session(persona_id=persona_id)
+            sid = session["id"]
+        return await chat_service.handle_message(sid, message, None)
 
     register_tool(
         "desktop_screenshot",
@@ -116,6 +130,21 @@ def _register_builtin_tools():
             "required": ["playbook_id", "prompt"],
         },
         run_playbook_tool,
+    )
+    register_tool(
+        "openworker_chat",
+        "Send a message to OpenWorker — chat, browser research, or desktop automation. "
+        "Use from Buzz MCP agents when you need desktop hands, not just coding tools.",
+        {
+            "type": "object",
+            "properties": {
+                "message": {"type": "string", "description": "User message for OpenWorker"},
+                "session_id": {"type": "string", "description": "Optional existing session ID"},
+                "persona_id": {"type": "string", "description": "Persona ID (default: openworker)"},
+            },
+            "required": ["message"],
+        },
+        openworker_chat,
     )
 
 

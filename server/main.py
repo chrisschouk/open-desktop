@@ -30,6 +30,8 @@ from .tools import list_tools, call_tool
 from .gateway import dispatch as gateway_dispatch
 from .scheduler import init_schedules, create_schedule, list_schedules, scheduler_loop
 from .runtime import verify_api_token
+from .health import get_health
+from .workflow_loader import load_workflow_files
 
 
 # WebSocket connection manager
@@ -192,6 +194,11 @@ async def startup_event():
     memory.init_db()
     init_audit()
     init_schedules()
+    if hasattr(sandbox_manager, "reconcile_from_docker"):
+        await sandbox_manager.reconcile_from_docker()
+    imported = load_workflow_files()
+    if imported:
+        print(f"[Startup] Loaded {len(imported)} workflow(s) from workflows/")
     if SCHEDULER_ENABLED:
         asyncio.create_task(scheduler_loop(manager.broadcast_action))
         print("[Startup] Scheduler enabled")
@@ -220,6 +227,11 @@ def root():
         "sandbox_mode": SANDBOX_MODE,
         "tagline": "Open source desktop agent",
     }
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    return await get_health()
 
 
 @app.get("/api/v1/machines")

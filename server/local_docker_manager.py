@@ -69,6 +69,87 @@ class LocalDockerManager:
         self._next_vnc_port = VNC_PORT_START
         self._next_daemon_port = DAEMON_PORT_START
 
+    async def reconcile_from_docker(self) -> int:
+        """Re-register opendesktop-* containers after server restart."""
+        rc, stdout, _ = await self._docker_exec(
+            "ps", "-a",
+            "--filter", "name=opendesktop-",
+            "--format", "{{.Names}}\t{{.Status}}\t{{.Ports}}",
+        )
+        if rc != 0:
+            print("[LocalDocker] reconcile: docker ps failed")
+            return 0
+
+        imported = 0
+        for line in stdout.strip().splitlines():
+            if not line.strip():
+                continue
+            parts = line.split("\t")
+            if len(parts) < 3:
+                continue
+            container_name, status_text, ports = parts[0], parts[1], parts[2]
+            if not container_name.startswith("opendesktop-"):
+                continue
+
+            sandbox_id = container_name.removeprefix("opendesktop-")
+            if sandbox_id in self.sandboxes:
+                continue
+
+            vnc_port, daemon_port = self._parse_ports(ports)
+            if vnc_port is None or daemon_port is None:
+                continue
+
+            self._next_vnc_port = max(self._next_vnc_port, vnc_port + 1)
+            self._next_daemon_port = max(self._next_daemon_port, daemon_port + 1)
+
+            info = SandboxInfo(
+                id=sandbox_id,
+                name=f"Machine-{sandbox_id}",
+                container_name=container_name,
+                vnc_port=vnc_port,
+                daemon_port=daemon_port,
+                status=self._status_from_docker(status_text),
+            )
+            self.sandboxes[sandbox_id] = info
+            imported += 1
+            if info.status == "starting":
+                asyncio.create_task(self._wait_for_healthy(sandbox_id))
+
+        if imported:
+            print(f"[LocalDocker] Reconciled {imported} sandbox(es) from Docker")
+        return imported
+
+    @staticmethod
+    def _parse_ports(ports: str) -> tuple:
+        """Extract host VNC (6080) and daemon (8000) ports from docker ps PORTS column."""
+        vnc_port = None
+        daemon_port = None
+        for segment in ports.split(","):
+            segment = segment.strip()
+            if "->" not in segment:
+                continue
+            host, container = segment.split("->", 1)
+            host_port = host.rsplit(":", 1)[-1]
+            container_port = container.split("/")[0]
+            try:
+                hp = int(host_port)
+            except ValueError:
+                continue
+            if container_port == "6080":
+                vnc_port = hp
+            elif container_port == "8000":
+                daemon_port = hp
+        return vnc_port, daemon_port
+
+    @staticmethod
+    def _status_from_docker(status_text: str) -> str:
+        lower = status_text.lower()
+        if lower.startswith("up"):
+            return "starting"
+        if "exited" in lower or "dead" in lower:
+            return "stopped"
+        return "starting"
+
     def _allocate_ports(self) -> tuple:
         vnc = self._next_vnc_port
         daemon = self._next_daemon_port

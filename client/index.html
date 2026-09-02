@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="setup-banner" class="setup-banner" hidden>
+        <span id="setup-banner-text">No LLM API key configured — chat and automation won't work until you add one.</span>
+        <button class="btn btn-secondary btn-sm" id="btn-banner-api-key">Add API Key</button>
+        <button class="btn btn-secondary btn-sm setup-banner-dismiss" id="btn-dismiss-banner" aria-label="Dismiss">&times;</button>
+    </div>
     <div class="app-container">
         <!-- Top Navigation Bar -->
         <header class="navbar">

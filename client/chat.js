@@ -2,12 +2,39 @@
 
 let chatSessionId = null;
 let chatPollInterval = null;
+let chatIsWorking = false;
 
 const chatMessages = document.getElementById("chat-messages");
 const chatInput = document.getElementById("chat-input");
 const chatSendBtn = document.getElementById("btn-chat-send");
 const chatLiveImg = document.getElementById("chat-live-screen");
 const chatStatusBadge = document.getElementById("chat-status-badge");
+
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function renderMarkdown(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    html = html.replace(/\n/g, "<br>");
+    return html;
+}
+
+function setChatWorking(working) {
+    chatIsWorking = working;
+    if (chatSendBtn) {
+        chatSendBtn.disabled = working;
+        chatSendBtn.textContent = working ? "Working…" : "Send";
+    }
+    if (chatInput) chatInput.disabled = working;
+}
 
 async function initChat() {
     try {
@@ -30,8 +57,12 @@ async function initChat() {
 function appendChatMessage(role, content, meta = {}) {
     if (!chatMessages) return;
     const el = document.createElement("div");
-    el.className = `chat-msg ${role}${meta.status === "working" ? " working" : ""}`;
-    el.textContent = content;
+    el.className = `chat-msg ${role}${meta.status === "working" ? " working" : ""}${meta.error ? " error" : ""}`;
+    if (role === "assistant" && !meta.error) {
+        el.innerHTML = renderMarkdown(content);
+    } else {
+        el.textContent = content;
+    }
     if (meta.intent) {
         const m = document.createElement("div");
         m.className = "chat-msg-meta";
@@ -43,16 +74,13 @@ function appendChatMessage(role, content, meta = {}) {
 }
 
 async function sendChatMessage() {
-    if (!chatInput || !chatSessionId) return;
+    if (!chatInput || !chatSessionId || chatIsWorking) return;
     const text = chatInput.value.trim();
     if (!text) return;
 
     appendChatMessage("user", text);
     chatInput.value = "";
-    if (chatSendBtn) {
-        chatSendBtn.disabled = true;
-        chatSendBtn.textContent = "…";
-    }
+    setChatWorking(true);
 
     try {
         const res = await fetch(`${API_BASE}/chat`, {
@@ -74,14 +102,12 @@ async function sendChatMessage() {
         if (data.status === "working") {
             startChatPolling();
             connectChatLiveStream();
+        } else {
+            setChatWorking(false);
         }
     } catch (e) {
         appendChatMessage("assistant", `Error: ${e.message}`, { error: true });
-    } finally {
-        if (chatSendBtn) {
-            chatSendBtn.disabled = false;
-            chatSendBtn.textContent = "Send";
-        }
+        setChatWorking(false);
     }
 }
 
@@ -112,6 +138,7 @@ function startChatPolling() {
             if (session.status === "idle" || session.status === "error") {
                 clearInterval(chatPollInterval);
                 chatPollInterval = null;
+                setChatWorking(false);
                 if (chatStatusBadge) {
                     if (session.status === "error") {
                         chatStatusBadge.textContent = "Error";

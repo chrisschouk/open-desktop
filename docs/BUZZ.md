@@ -116,11 +116,28 @@ OpenDesktop can add Buzz-compatible trigger shapes to playbooks or a `workflows/
 
 `buzz-acp` bridges @mentions → coding agents via ACP.
 
-**Integration opportunity:** OpenDesktop sandbox tools as an MCP server Buzz agents can call for:
+**Shipped:** `connectors/mcp_server.py` exposes OpenDesktop tools over stdio MCP, including:
 
-- Web research requiring a real browser
-- Form filling in apps without APIs
-- Music PR discovery playbooks
+| Tool | Purpose |
+|---|---|
+| `openworker_chat` | Full OpenWorker intent routing — chat, browser research, or desktop automation |
+| `desktop_click` / `desktop_type` / `desktop_screenshot` | Direct sandbox control |
+| `run_playbook` | Declarative campaign playbooks |
+| `list_sandboxes` | Fleet status |
+
+Buzz agents call `openworker_chat` when they need a real browser or GUI — coding MCP tools (`buzz-dev-mcp`) stay for repo work.
+
+```json
+{
+  "mcpServers": {
+    "opendesktop": {
+      "command": "python",
+      "args": ["connectors/mcp_server.py"],
+      "env": { "OPENDESKTOP_API_URL": "http://localhost:8000" }
+    }
+  }
+}
+```
 
 OpenWorker becomes the **remote body** for non-coding Buzz tasks — same pattern as Buzz remote agents, but desktop-shaped.
 
