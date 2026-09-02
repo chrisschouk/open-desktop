@@ -2,6 +2,8 @@
 
 Get a local OpenWorker chat and desktop sandbox running in a few minutes.
 
+**AI agents:** skip to [AGENT_API.md](AGENT_API.md) — you want `health → sessions → chat → poll`.
+
 ---
 
 ## One-command bootstrap
@@ -16,9 +18,10 @@ This copies `.env.example` → `.env`, builds the sandbox Docker image, and inst
 Add your LLM key to `.env`:
 
 ```bash
-CHAT_API_KEY=sk-...
-VISION_API_KEY=sk-...
+OPENROUTER_API_KEY=sk-or-v1-...
 ```
+
+One key covers chat and desktop. See [API_KEYS.md](API_KEYS.md).
 
 ---
 

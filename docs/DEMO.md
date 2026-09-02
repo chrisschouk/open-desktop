@@ -1,6 +1,8 @@
 # Music PR Discovery — Golden Demo Path
 
-The flagship OpenWorker workflow for indie artists and small PR agencies: find UK radio pluggers and playlist curators without wasting your Sunday on spreadsheets.
+The flagship OpenWorker workflow for indie artists and small PR agencies.
+
+**Agent path:** `POST /sessions` → `POST /chat` with music PR prompt → poll until `idle`. See [AGENT_API.md](AGENT_API.md) · `./scripts/demo_music_pr.sh`
 
 **Playbook:** `pb_music_pr_discovery` (5 template steps, single-sandbox execution today)
 

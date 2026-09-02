@@ -4,10 +4,12 @@
 
 | Name | What it is |
 |---|---|
-| **OpenDesktop** | Platform, engine, repo, infrastructure |
-| **OpenWorker** | Conversational agent — chat UI, personas, connectors |
+| **OpenDesktop** | Platform, engine, repo, infrastructure (control plane) |
+| **OpenWorker** | Conversational agent — routing, sessions, personas (reasoning layer) |
 
 Tagline: **Open source desktop agent**
+
+---
 
 ## Positioning
 
@@ -17,25 +19,54 @@ Tagline: **Open source desktop agent**
 
 One-liner: *OpenClaw talks. OpenHands codes. OpenDesktop works — on a screen you can see.*
 
+---
+
+## Agent-centric framing
+
+For AI agents, the brand maps to **layers**:
+
+| Brand term | Agent layer | Artifact |
+|------------|-------------|----------|
+| OpenDesktop | L0 substrate + compute plane | sandboxes, health, audit |
+| OpenWorker | L2 capabilities + L4 channels | chat router, gateway, MCP |
+| Skills | L3 procedures (knowledge) | `skills/*/SKILL.md` |
+| Playbooks | L3 procedures (structure) | `playbooks/*.json` |
+| WorkerHub | Discovery registry | `/workerhub` |
+
+Full ontology: [AGENT_SYSTEM.md](AGENT_SYSTEM.md)
+
+---
+
 ## Vertical wedge
 
-Music PR, lead gen, web research — packaged as **Skills** (Markdown) and **Playbooks** (JSON).
+Music PR, lead gen, web research — ship as **skill + playbook** pairs before touching core code.
 
-## Extension model (borrowed from OpenClaw)
+---
 
-| Layer | Format | Purpose |
+## Extension model (coherent accretion)
+
+| Layer | Format | Agent discovers |
 |---|---|---|
-| **Skills** | `skills/*/SKILL.md` | Teach OpenWorker how (triggers + instructions) |
-| **Playbooks** | `playbooks/*.json` | Fleet orchestration steps |
-| **Tools** | `GET /api/v1/tools` | MCP-style sandbox/playbook tools |
-| **Connectors** | `connectors/*.py` | Discord, Telegram → gateway dispatch |
+| **Skills** | `skills/*/SKILL.md` | triggers → context + optional playbook_id |
+| **Playbooks** | `playbooks/*.json` | step templates; `execution_mode: single_sandbox_template` |
+| **Tools** | `server/tools.py` | MCP `tools/list` |
+| **Workflows** | `workflows/*.yaml` | scheduler import |
+| **Connectors** | `connectors/*.py` | gateway channel names |
 
-## Future: WorkerHub
+**Rule:** New verticals extend L3; they do not fork routing logic.
 
-Community registry for skills and playbooks (ClawHub-style, vertical-first).
+---
 
-## Related: Block Buzz
+## WorkerHub
 
-For comparison with [Block Buzz](https://github.com/block/buzz) (team workspace on Nostr) and integration opportunities, see [BUZZ.md](BUZZ.md).
+Community registry for skills and playbooks. Agents use `GET /api/v1/workerhub` or `openworker hub`.
 
-Buzz = relay/workspace. OpenDesktop = desktop body for tasks that need a screen.
+See [WORKERHUB.md](WORKERHUB.md).
+
+---
+
+## Block Buzz
+
+Buzz = team relay/workspace. OpenDesktop = desktop body.
+
+See [BUZZ.md](BUZZ.md).
