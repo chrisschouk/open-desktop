@@ -29,12 +29,21 @@ Open **http://localhost:8888** → OpenWorker Chat tab.
 ## Architecture
 
 ```
-OpenWorker Chat UI  →  Intent Router  →  Chat (fast LLM)
-                              ↓
-                    Desktop Sandbox (Docker)
-                              ↓
-                    Vision Agent Loop (observe → act)
+Channels (Discord, Telegram, Web)
+         ↓
+   Gateway dispatch
+         ↓
+OpenWorker (intent router + skills)
+    ↓ chat / browser / desktop
+Desktop Sandbox (Docker XFCE) + vision loop
 ```
+
+## Brand
+
+- **OpenDesktop** — platform & engine
+- **OpenWorker** — conversational agent
+
+See [docs/BRAND.md](docs/BRAND.md).
 
 ## API
 

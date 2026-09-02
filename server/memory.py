@@ -26,10 +26,16 @@ def init_db():
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 persona_id TEXT NOT NULL DEFAULT 'openworker',
+                channel_key TEXT,
                 status TEXT NOT NULL DEFAULT 'idle',
                 machine_id TEXT,
                 playbook_id TEXT,
                 created_at REAL NOT NULL,
+                updated_at REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS channel_sessions (
+                channel_key TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
                 updated_at REAL NOT NULL
             );
             CREATE TABLE IF NOT EXISTS messages (
@@ -43,17 +49,34 @@ def init_db():
             );
             CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
         """)
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()]
+        if "channel_key" not in cols:
+            conn.execute("ALTER TABLE sessions ADD COLUMN channel_key TEXT")
 
 
-def create_session(persona_id: str = "openworker") -> dict:
+def create_session(persona_id: str = "openworker", channel_key: Optional[str] = None) -> dict:
     session_id = f"sess_{uuid.uuid4().hex[:12]}"
     now = time.time()
     with _connect() as conn:
         conn.execute(
-            "INSERT INTO sessions (id, persona_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (session_id, persona_id, "idle", now, now),
+            "INSERT INTO sessions (id, persona_id, channel_key, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (session_id, persona_id, channel_key, "idle", now, now),
         )
+        if channel_key:
+            conn.execute(
+                "INSERT OR REPLACE INTO channel_sessions (channel_key, session_id, updated_at) VALUES (?, ?, ?)",
+                (channel_key, session_id, now),
+            )
     return get_session(session_id)
+
+
+def get_channel_session(channel_key: str) -> Optional[str]:
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT session_id FROM channel_sessions WHERE channel_key = ?",
+            (channel_key,),
+        ).fetchone()
+    return row["session_id"] if row else None
 
 
 def get_session(session_id: str) -> Optional[dict]:

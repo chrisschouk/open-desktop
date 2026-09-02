@@ -22,7 +22,11 @@ from . import memory
 from .chat_service import chat_service
 from .persona import get_greeting, load_persona
 from .playbook_executor import list_playbooks
-from .config import AUTO_PROVISION_FLEET, SANDBOX_MODE
+from .config import AUTO_PROVISION_FLEET, SANDBOX_MODE, SCHEDULER_ENABLED
+from .skills import list_skills_catalog
+from .tools import list_tools, call_tool
+from .gateway import dispatch as gateway_dispatch
+from .scheduler import init_schedules, create_schedule, list_schedules, scheduler_loop
 
 
 # WebSocket connection manager
@@ -111,9 +115,9 @@ def ensure_streaming(machine_id: str):
 
 # FastAPI App
 app = FastAPI(
-    title="OpenDesktop Engine",
-    version="2.0.0",
-    description="Cloud desktops for AI agents. Powered by Docker and computer control vision.",
+    title="OpenDesktop",
+    version="2.1.0",
+    description="Open source desktop agent platform. OpenWorker chat + sandbox automation.",
 )
 
 app.add_middleware(
@@ -157,12 +161,36 @@ class CreateSessionRequest(BaseModel):
     persona_id: Optional[str] = "openworker"
 
 
+class GatewayDispatchRequest(BaseModel):
+    channel: str
+    channel_id: str
+    message: str
+    user_id: Optional[str] = None
+    persona_id: Optional[str] = "openworker"
+
+
+class CreateScheduleRequest(BaseModel):
+    name: str
+    prompt: str
+    interval_seconds: int = 86400
+    playbook_id: Optional[str] = None
+
+
+class ToolCallRequest(BaseModel):
+    name: str
+    arguments: dict = {}
+
+
 # ── REST Endpoints ────────────────────────────────────
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize DB and optionally provision default fleet."""
+    """Initialize DB, scheduler, and optionally provision default fleet."""
     memory.init_db()
+    init_schedules()
+    if SCHEDULER_ENABLED:
+        asyncio.create_task(scheduler_loop(manager.broadcast_action))
+        print("[Startup] Scheduler enabled")
     if not AUTO_PROVISION_FLEET:
         print("[Startup] AUTO_PROVISION_FLEET=false — skipping default machines")
         return
@@ -341,6 +369,49 @@ def get_personas():
 @app.get("/api/v1/playbooks")
 def get_playbooks():
     return {"playbooks": list_playbooks()}
+
+
+@app.get("/api/v1/skills")
+def get_skills():
+    return {"skills": list_skills_catalog()}
+
+
+@app.get("/api/v1/tools")
+def get_tools():
+    return {"tools": list_tools()}
+
+
+@app.post("/api/v1/tools/call")
+async def invoke_tool(req: ToolCallRequest):
+    try:
+        result = await call_tool(req.name, req.arguments)
+        return {"status": "success", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/v1/gateway/dispatch")
+async def gateway_dispatch_endpoint(req: GatewayDispatchRequest):
+    """Unified entry for Discord, Telegram, and other channel adapters."""
+    return await gateway_dispatch(
+        req.channel,
+        req.channel_id,
+        req.message,
+        req.user_id,
+        req.persona_id or "openworker",
+        manager.broadcast_action,
+    )
+
+
+@app.get("/api/v1/schedules")
+def get_schedules():
+    return {"schedules": list_schedules()}
+
+
+@app.post("/api/v1/schedules")
+def post_schedule(req: CreateScheduleRequest):
+    sched = create_schedule(req.name, req.prompt, req.interval_seconds, req.playbook_id)
+    return {"status": "created", "schedule": sched}
 
 
 # ── Playbooks / Orchestration ─────────────────────────

@@ -15,4 +15,4 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r server/requirements.txt
-      - run: python -c "from server.main import app; from server.chat_service import chat_service; print('imports ok')"
+      - run: python -c "from server.main import app; from server.gateway import dispatch; from server.skills import list_skills_catalog; from server.tools import list_tools; print('imports ok')"

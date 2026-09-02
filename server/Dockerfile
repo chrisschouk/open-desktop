@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r server/requirements.txt
 COPY server /app/server
 COPY personas /app/personas
 COPY playbooks /app/playbooks
+COPY skills /app/skills
 COPY connectors /app/connectors
 COPY open_desktop /app/open_desktop
 

@@ -10,17 +10,18 @@ import aiohttp
 
 from .config import CHAT_API_KEY, CHAT_API_URL, CHAT_MODEL
 
-IntentType = Literal["chat", "research", "automate", "playbook"]
+IntentType = Literal["chat", "browser", "research", "automate", "playbook"]
 
 ROUTER_PROMPT = """Classify the user's message into exactly one intent:
 
-- chat: general questions, greetings, planning, clarification — no desktop needed
-- research: find information on the web, competitive analysis, look up contacts
-- automate: fill forms, click through apps, RPA, sign up, data entry
+- chat: general questions, greetings, planning, clarification — no web or desktop needed
+- browser: simple web lookup, quick facts, "what is X" — can use search snippets without a desktop
+- research: deep web research needing a real browser desktop (multiple sites, extraction, reports)
+- automate: fill forms, click through apps, RPA, sign up, data entry on a desktop
 - playbook: user mentions a named workflow (web research, lead gen, music PR, RPA)
 
 Respond with ONLY JSON:
-{"intent": "chat|research|automate|playbook", "playbook_id": "pb_..." or null, "task_prompt": "refined task for the agent or null"}
+{"intent": "chat|browser|research|automate|playbook", "playbook_id": "pb_..." or null, "task_prompt": "refined task or null"}
 
 If intent is playbook, set playbook_id to one of: pb_web_research, pb_data_entry_rpa, pb_lead_gen_campaign, pb_music_pr_discovery
 """
@@ -94,6 +95,10 @@ def _heuristic_classify(message: str) -> dict:
     for phrase, pb_id in playbook_map.items():
         if phrase in lower:
             return {"intent": "playbook", "playbook_id": pb_id, "task_prompt": message}
+
+    simple_lookup = ["what is", "who is", "when did", "how much", "define ", "quick"]
+    if any(w in lower for w in simple_lookup) and not any(w in lower for w in ["fill", "submit", "sign up", "automate"]):
+        return {"intent": "browser", "playbook_id": None, "task_prompt": message}
 
     action_words = [
         "research", "find", "search", "look up", "browse", "open",

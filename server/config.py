@@ -12,8 +12,12 @@ load_dotenv()
 DATA_DIR = Path(os.getenv("OPENDESKTOP_DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
 VAULT_PATH = Path(os.getenv("OPENDESKTOP_VAULT_PATH", DATA_DIR / "vault"))
 PERSONAS_DIR = Path(os.getenv("OPENDESKTOP_PERSONAS_DIR", Path(__file__).resolve().parent.parent / "personas"))
+SKILLS_DIR = Path(os.getenv("OPENDESKTOP_SKILLS_DIR", Path(__file__).resolve().parent.parent / "skills"))
 
-# Sandbox runtime
+# Connectors
+DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() == "true"
 SANDBOX_MODE = os.getenv("SANDBOX_MODE", "local").lower()  # local | remote
 HETZNER_HOST = os.getenv("HETZNER_HOST", "")
 SSH_HOST_ALIAS = os.getenv("SSH_HOST_ALIAS", "hetzner")
@@ -33,9 +37,6 @@ VISION_MODEL = os.getenv("VISION_MODEL", "gpt-4o-mini")
 # Agent limits
 MAX_VISION_STEPS = int(os.getenv("MAX_VISION_STEPS", "25"))
 DEFAULT_PERSONA = os.getenv("DEFAULT_PERSONA", "openworker")
-
-# Connectors
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 
 # Ensure data dirs exist
 DATA_DIR.mkdir(parents=True, exist_ok=True)
