@@ -35,7 +35,10 @@ async def api_post(path: str, body: dict):
     import aiohttp
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{API_URL}{path}", json=body, headers=_headers()) as resp:
-            return await resp.json()
+            data = await resp.json()
+            if resp.status >= 400:
+                return {"error": data, "status": resp.status}
+            return data
 
 
 async def handle_request(req: dict) -> dict:
@@ -73,11 +76,12 @@ async def handle_request(req: dict) -> dict:
         name = params.get("name")
         arguments = params.get("arguments", {})
         data = await api_post("/api/v1/tools/call", {"name": name, "arguments": arguments})
+        is_error = "error" in data or data.get("status") not in (None, "success")
         text = json.dumps(data.get("result", data), indent=2)
         return {
             "jsonrpc": "2.0",
             "id": req_id,
-            "result": {"content": [{"type": "text", "text": text}], "isError": False},
+            "result": {"content": [{"type": "text", "text": text}], "isError": is_error},
         }
 
     return {

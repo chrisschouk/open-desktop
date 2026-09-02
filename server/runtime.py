@@ -34,5 +34,6 @@ async def ensure_running_sandbox(sandbox_manager, name: str = "OpenWorker Agent"
         return machines[0]["id"]
     machine_data = await sandbox_manager.create_sandbox(name=name)
     machine_id = machine_data["id"]
-    await wait_for_sandbox_running(sandbox_manager, machine_id)
+    if not await wait_for_sandbox_running(sandbox_manager, machine_id):
+        raise RuntimeError(f"Sandbox {machine_id} did not become healthy in time")
     return machine_id

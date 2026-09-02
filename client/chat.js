@@ -87,7 +87,7 @@ async function sendChatMessage() {
 
 function startChatPolling() {
     if (chatPollInterval) clearInterval(chatPollInterval);
-    let lastCount = chatMessages ? chatMessages.children.length : 0;
+    let lastCount = 0;
 
     chatPollInterval = setInterval(async () => {
         if (!chatSessionId) return;
@@ -97,11 +97,13 @@ function startChatPolling() {
             const msgs = data.messages || [];
             const session = data.session || {};
 
-            if (msgs.length > lastCount) {
+            if (lastCount === 0) {
+                lastCount = msgs.length;
+            } else if (msgs.length > lastCount) {
                 for (let i = lastCount; i < msgs.length; i++) {
                     const m = msgs[i];
-                    if (m.role === "assistant" && m.metadata?.status === "completed") {
-                        appendChatMessage("assistant", m.content, { intent: "completed" });
+                    if (m.role === "assistant" && (m.metadata?.status === "completed" || m.metadata?.status === "error")) {
+                        appendChatMessage("assistant", m.content, { intent: m.metadata?.status || "completed" });
                     }
                 }
                 lastCount = msgs.length;
@@ -111,8 +113,13 @@ function startChatPolling() {
                 clearInterval(chatPollInterval);
                 chatPollInterval = null;
                 if (chatStatusBadge) {
-                    chatStatusBadge.textContent = "Ready";
-                    chatStatusBadge.className = "badge badge-green";
+                    if (session.status === "error") {
+                        chatStatusBadge.textContent = "Error";
+                        chatStatusBadge.className = "badge badge-amber";
+                    } else {
+                        chatStatusBadge.textContent = "Ready";
+                        chatStatusBadge.className = "badge badge-green";
+                    }
                 }
             }
         } catch (e) {

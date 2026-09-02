@@ -86,12 +86,22 @@ class ChatService:
             task_prompt = f"{skill_ctx}\n\n{task_prompt}"
 
         ack = await self._build_ack(intent, task_prompt, playbook_id)
+        if not memory.try_acquire_session(session_id):
+            reply = "Still working on the previous task — I'll update you when it's done."
+            memory.add_message(session_id, "assistant", reply, {"intent": "busy", "status": "working"})
+            return {
+                "session_id": session_id,
+                "intent": "busy",
+                "reply": reply,
+                "status": "working",
+            }
+
         memory.add_message(session_id, "assistant", ack, {
             "intent": intent,
             "playbook_id": playbook_id,
             "status": "working",
         })
-        memory.update_session(session_id, status="working", playbook_id=playbook_id)
+        memory.update_session(session_id, playbook_id=playbook_id)
 
         asyncio.create_task(
             self._run_task(session_id, intent, task_prompt, playbook_id, broadcast_action)

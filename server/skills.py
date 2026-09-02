@@ -9,9 +9,8 @@ from typing import Dict, List, Optional
 
 import yaml
 
-from .config import DATA_DIR
+from .config import DATA_DIR, SKILLS_DIR
 
-SKILLS_DIR = Path(__file__).resolve().parent.parent / "skills"
 USER_SKILLS_DIR = DATA_DIR / "skills"
 
 

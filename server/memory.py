@@ -87,6 +87,17 @@ def get_session(session_id: str) -> Optional[dict]:
         return dict(row)
 
 
+def try_acquire_session(session_id: str) -> bool:
+    """Atomically move session idle → working. Returns False if already busy."""
+    now = time.time()
+    with _connect() as conn:
+        cur = conn.execute(
+            "UPDATE sessions SET status = 'working', updated_at = ? WHERE id = ? AND status = 'idle'",
+            (now, session_id),
+        )
+        return cur.rowcount == 1
+
+
 def update_session(session_id: str, **fields):
     fields["updated_at"] = time.time()
     sets = ", ".join(f"{k} = ?" for k in fields)

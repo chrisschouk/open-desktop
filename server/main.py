@@ -29,6 +29,7 @@ from .skills import list_skills_catalog
 from .tools import list_tools, call_tool
 from .gateway import dispatch as gateway_dispatch
 from .scheduler import init_schedules, create_schedule, list_schedules, scheduler_loop
+from .runtime import verify_api_token
 
 
 # WebSocket connection manager
