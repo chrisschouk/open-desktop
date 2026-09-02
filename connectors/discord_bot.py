@@ -19,6 +19,14 @@ except ImportError:
 
 API_URL = os.getenv("OPENDESKTOP_API_URL", "http://localhost:8000").rstrip("/")
 TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+API_TOKEN = os.getenv("OPENDESKTOP_API_TOKEN", "")
+
+
+def _headers():
+    h = {"Content-Type": "application/json"}
+    if API_TOKEN:
+        h["Authorization"] = f"Bearer {API_TOKEN}"
+    return h
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -36,6 +44,7 @@ async def dispatch(channel_id: str, message: str, user_id: str) -> dict:
         async with session.post(
             f"{API_URL}/api/v1/gateway/dispatch",
             json=payload,
+            headers=_headers(),
             timeout=aiohttp.ClientTimeout(total=120),
         ) as resp:
             return await resp.json()

@@ -14,6 +14,7 @@ from .orchestrator import orchestrator
 from .skills import match_skills, skills_context_for_message
 from .browser_research import browser_research
 from . import hooks
+from .runtime import ensure_running_sandbox
 
 
 class ChatService:
@@ -27,6 +28,16 @@ class ChatService:
         if not session:
             return {"error": "Session not found"}
 
+        if session.get("status") == "working":
+            reply = "Still working on the previous task — I'll update you when it's done."
+            memory.add_message(session_id, "assistant", reply, {"intent": "busy", "status": "working"})
+            return {
+                "session_id": session_id,
+                "intent": "busy",
+                "reply": reply,
+                "status": "working",
+            }
+
         memory.add_message(session_id, "user", message)
         history = memory.get_messages(session_id)
         persona_id = session.get("persona_id", "openworker")
@@ -36,7 +47,9 @@ class ChatService:
         skill_playbook = matched_skills[0].get("playbook_id") if matched_skills else None
 
         classification = await classify_intent(message, history)
-        intent = classification.get("intent", "chat")
+        intent = classification.get("intent") or "chat"
+        if intent not in ("chat", "browser", "research", "automate", "playbook"):
+            intent = "chat"
         if skill_playbook and intent in ("research", "playbook", "automate"):
             intent = "playbook"
             classification["playbook_id"] = skill_playbook
@@ -129,14 +142,7 @@ class ChatService:
                     playbook_id, task_prompt, sandbox_manager, agent_runner, broadcast_action
                 )
             else:
-                machines = [m for m in sandbox_manager.list_sandboxes() if m.get("status") == "running"]
-                if machines:
-                    machine_id = machines[0]["id"]
-                else:
-                    machine_data = await sandbox_manager.create_sandbox(name="OpenWorker Agent")
-                    machine_id = machine_data["id"]
-                    await asyncio.sleep(8)
-
+                machine_id = await ensure_running_sandbox(sandbox_manager, "OpenWorker Agent")
                 memory.update_session(session_id, machine_id=machine_id)
                 result = await orchestrator.run_single_task(
                     machine_id, task_prompt, broadcast_action

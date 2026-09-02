@@ -10,7 +10,7 @@ import base64
 from typing import Optional, List
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks, Request, Header
 from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +23,7 @@ from .chat_service import chat_service
 from .persona import get_greeting, load_persona
 from .playbook_executor import list_playbooks
 from .config import AUTO_PROVISION_FLEET, SANDBOX_MODE, SCHEDULER_ENABLED
+from .runtime import verify_api_token
 from .skills import list_skills_catalog
 from .tools import list_tools, call_tool
 from .gateway import dispatch as gateway_dispatch
@@ -382,7 +383,9 @@ def get_tools():
 
 
 @app.post("/api/v1/tools/call")
-async def invoke_tool(req: ToolCallRequest):
+async def invoke_tool(req: ToolCallRequest, authorization: Optional[str] = Header(None)):
+    if not verify_api_token(authorization):
+        raise HTTPException(status_code=401, detail="Unauthorized")
     try:
         result = await call_tool(req.name, req.arguments)
         return {"status": "success", "result": result}
@@ -391,8 +394,10 @@ async def invoke_tool(req: ToolCallRequest):
 
 
 @app.post("/api/v1/gateway/dispatch")
-async def gateway_dispatch_endpoint(req: GatewayDispatchRequest):
+async def gateway_dispatch_endpoint(req: GatewayDispatchRequest, authorization: Optional[str] = Header(None)):
     """Unified entry for Discord, Telegram, and other channel adapters."""
+    if not verify_api_token(authorization):
+        raise HTTPException(status_code=401, detail="Unauthorized")
     return await gateway_dispatch(
         req.channel,
         req.channel_id,
@@ -417,17 +422,9 @@ def post_schedule(req: CreateScheduleRequest):
 # ── Playbooks / Orchestration ─────────────────────────
 
 @app.post("/api/v1/playbooks/run")
-async def run_playbook(req: RunPlaybookRequest, background_tasks: BackgroundTasks):
+async def run_playbook_endpoint(req: RunPlaybookRequest, background_tasks: BackgroundTasks):
     from .playbook_executor import run_playbook as execute_playbook
     from .agent_runner import agent_runner
-
-    machines = [m for m in sandbox_manager.list_sandboxes() if m.get("status") == "running"]
-    if machines:
-        machine_id = machines[0]["id"]
-    else:
-        machine_data = await sandbox_manager.create_sandbox(name="Agent Machine")
-        machine_id = machine_data["id"]
-        await asyncio.sleep(5)
 
     playbook_id = req.playbook_id or "pb_web_research"
 
@@ -442,7 +439,6 @@ async def run_playbook(req: RunPlaybookRequest, background_tasks: BackgroundTask
 
     return {
         "status": "started",
-        "machine_id": machine_id,
         "playbook_id": playbook_id,
         "prompt": req.prompt,
     }

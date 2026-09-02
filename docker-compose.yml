@@ -19,6 +19,8 @@ services:
       - SANDBOX_MODE=local
       - OPENDESKTOP_DATA_DIR=/app/data
       - AUTO_PROVISION_FLEET=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   sandbox-node-1:

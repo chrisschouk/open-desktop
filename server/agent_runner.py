@@ -53,13 +53,18 @@ class AgentRunner:
         self.max_steps = MAX_VISION_STEPS
         self.step_count = 0
 
-    async def _call_vision_model(self, screenshot_b64: str, user_message: str = "") -> dict:
+    async def _call_vision_model(
+        self,
+        screenshot_b64: str,
+        conversation_history: List[dict],
+        user_message: str = "",
+    ) -> dict:
         """Send screenshot to vision model and get next action."""
         messages = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT}
         ]
 
-        for msg in self.conversation_history[-12:]:
+        for msg in conversation_history[-12:]:
             messages.append(msg)
 
         content = []
@@ -121,12 +126,6 @@ class AgentRunner:
 
                     data = await resp.json()
                     response_text = data["choices"][0]["message"]["content"].strip()
-
-                    self.conversation_history.append({
-                        "role": "assistant",
-                        "content": response_text
-                    })
-
                     return self._parse_action(response_text)
 
         except Exception as e:
@@ -170,14 +169,13 @@ class AgentRunner:
     ):
         """
         Main agent loop: observe → think → act → repeat.
+        Uses per-run conversation history so concurrent tasks do not collide.
         """
-        self.step_count = 0
-        self.conversation_history = []
-
-        self.conversation_history.append({
+        step_count = 0
+        conversation_history: List[dict] = [{
             "role": "user",
             "content": f"Your task: {prompt}"
-        })
+        }]
 
         if broadcast_action:
             await broadcast_action(sandbox_id, {
@@ -189,8 +187,8 @@ class AgentRunner:
                 "machine_id": sandbox_id,
             })
 
-        while self.step_count < self.max_steps:
-            self.step_count += 1
+        while step_count < self.max_steps:
+            step_count += 1
 
             screenshot_b64 = await sandbox_manager.get_screenshot_base64(sandbox_id)
             if not screenshot_b64:
@@ -198,18 +196,22 @@ class AgentRunner:
                 await asyncio.sleep(2)
                 continue
 
-            context = f"Step {self.step_count}/{self.max_steps}. Task: {prompt}"
-            action = await self._call_vision_model(screenshot_b64, context)
+            context = f"Step {step_count}/{self.max_steps}. Task: {prompt}"
+            action = await self._call_vision_model(screenshot_b64, conversation_history, context)
+            conversation_history.append({
+                "role": "assistant",
+                "content": json.dumps(action),
+            })
 
             thought = action.get("thought", "")
             action_type = action.get("action", "unknown")
 
-            print(f"[AgentEngine] Step {self.step_count}: {action_type} - {thought}")
+            print(f"[AgentEngine] Step {step_count}: {action_type} - {thought}")
 
             if broadcast_action:
                 await broadcast_action(sandbox_id, {
                     "type": "action",
-                    "step": self.step_count,
+                    "step": step_count,
                     "thought": thought or f"Executing: {action_type}",
                     "action_type": action_type,
                     "agent": "Vision Agent",
@@ -223,13 +225,13 @@ class AgentRunner:
                 if broadcast_action:
                     await broadcast_action(sandbox_id, {
                         "type": "action",
-                        "step": self.step_count,
+                        "step": step_count,
                         "thought": f"Completed: {summary}",
                         "action_type": "done",
                         "agent": "Vision Agent",
                         "machine_id": sandbox_id,
                     })
-                return {"status": "completed", "summary": summary, "steps": self.step_count}
+                return {"status": "completed", "summary": summary, "steps": step_count}
 
             # Execute action
             await sandbox_manager.execute_action(sandbox_id, action)
@@ -238,14 +240,14 @@ class AgentRunner:
         if broadcast_action:
             await broadcast_action(sandbox_id, {
                 "type": "action",
-                "step": self.step_count,
+                "step": step_count,
                 "thought": "Maximum steps reached. Task may be incomplete.",
                 "action_type": "max_steps",
                 "agent": "Vision Agent",
                 "machine_id": sandbox_id,
             })
 
-        return {"status": "max_steps_reached", "steps": self.step_count}
+        return {"status": "max_steps_reached", "steps": step_count}
 
 
 agent_runner = AgentRunner()

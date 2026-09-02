@@ -33,3 +33,9 @@ Music PR, lead gen, web research — packaged as **Skills** (Markdown) and **Pla
 ## Future: WorkerHub
 
 Community registry for skills and playbooks (ClawHub-style, vertical-first).
+
+## Related: Block Buzz
+
+For comparison with [Block Buzz](https://github.com/block/buzz) (team workspace on Nostr) and integration opportunities, see [BUZZ.md](BUZZ.md).
+
+Buzz = relay/workspace. OpenDesktop = desktop body for tasks that need a screen.

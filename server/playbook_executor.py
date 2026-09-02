@@ -65,9 +65,8 @@ async def run_playbook(
     if machines:
         machine_id = machines[0]["id"]
     else:
-        machine_data = await sandbox_manager.create_sandbox(name=f"Playbook-{playbook_id}")
-        machine_id = machine_data["id"]
-        await asyncio.sleep(8)
+        from .runtime import ensure_running_sandbox
+        machine_id = await ensure_running_sandbox(sandbox_manager, f"Playbook-{playbook_id}")
 
     # Build enriched prompt from playbook metadata
     enriched = (

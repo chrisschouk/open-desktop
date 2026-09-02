@@ -123,7 +123,10 @@ def add_message(
 def get_messages(session_id: str, limit: int = 50) -> List[dict]:
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC LIMIT ?",
+            """SELECT * FROM (
+                 SELECT * FROM messages WHERE session_id = ?
+                 ORDER BY created_at DESC LIMIT ?
+               ) ORDER BY created_at ASC""",
             (session_id, limit),
         ).fetchall()
     result = []
