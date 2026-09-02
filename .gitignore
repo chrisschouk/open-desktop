@@ -9,5 +9,7 @@ __pycache__/
 
 # Logs & Vault
 ObsidianVault/
+data/
 *.log
 /tmp/
+.env

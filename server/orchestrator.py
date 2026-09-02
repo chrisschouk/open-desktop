@@ -7,11 +7,9 @@ import os
 import asyncio
 from typing import Optional, Callable
 
-from .docker_manager import sandbox_manager
+from .config import VAULT_PATH
+from .sandbox_factory import sandbox_manager
 from .agent_runner import agent_runner
-
-
-VAULT_PATH = "/Users/chrisschofield/workspace/open-orgo/ObsidianVault"
 
 
 class FleetOrchestrator:
@@ -35,11 +33,11 @@ class FleetOrchestrator:
         )
 
         # Save result to Obsidian vault
-        os.makedirs(VAULT_PATH, exist_ok=True)
+        VAULT_PATH.mkdir(parents=True, exist_ok=True)
         safe_name = prompt[:50].replace(" ", "_").replace("/", "_")
-        filepath = os.path.join(VAULT_PATH, f"{safe_name}_report.md")
+        filepath = VAULT_PATH / f"{safe_name}_report.md"
         try:
-            with open(filepath, "w") as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write(f"# Agent Task Report\n\n")
                 f.write(f"**Prompt:** {prompt}\n\n")
                 f.write(f"**Machine:** {machine_id}\n\n")

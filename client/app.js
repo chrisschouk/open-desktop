@@ -23,8 +23,10 @@ const btnApiKeys = document.getElementById("btn-api-keys");
 const btnCloseModal = document.getElementById("btn-close-modal");
 
 // Navigation Tabs
+const btnTabChat = document.getElementById("btn-tab-chat");
 const btnTabOperator = document.getElementById("btn-tab-operator");
 const btnTabDeveloper = document.getElementById("btn-tab-developer");
+const containerChat = document.getElementById("container-chat");
 const containerOperator = document.getElementById("container-operator");
 const containerDeveloper = document.getElementById("container-developer");
 
@@ -189,17 +191,20 @@ class ActionStream {
     
     renderLogStep(s) {
         if (!logFeed) return;
-        const item = document.createElement("div");
-        item.className = "log-item fade-in";
-        const actName = s.action_type || "action";
-        item.innerHTML = `
-            <div class="log-item-header">
-                <span class="log-step-num">STEP ${s.step || '-'} [${s.agent || s.machine_id || 'Agent'}]</span>
-                <span class="log-action-tag">${actName.toUpperCase()}</span>
-            </div>
-            <div class="log-thought">${s.thought || ''}</div>
-        `;
-        logFeed.prepend(item);
+        const chatLog = document.getElementById("chat-log-feed");
+        [logFeed, chatLog].filter(Boolean).forEach(feed => {
+            const item = document.createElement("div");
+            item.className = "log-item fade-in";
+            const actName = s.action_type || "action";
+            item.innerHTML = `
+                <div class="log-item-header">
+                    <span class="log-step-num">STEP ${s.step || '-'} [${s.agent || s.machine_id || 'Agent'}]</span>
+                    <span class="log-action-tag">${actName.toUpperCase()}</span>
+                </div>
+                <div class="log-thought">${s.thought || ''}</div>
+            `;
+            feed.prepend(item);
+        });
     }
 }
 
@@ -209,8 +214,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
     setupEventListeners();
+    setMainTab("chat");
+    initChat();
     fetchMachines();
     actionStream = new ActionStream();
+    fetchEngineStatus();
+}
+
+async function fetchEngineStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/health`);
+        const data = await res.json();
+        const el = document.getElementById("engine-status");
+        if (el) {
+            const dockerOk = data.docker?.available ? "docker ok" : "docker unavailable";
+            el.textContent = `${data.agent || "OpenWorker"} • ${data.sandbox_mode || "local"} • ${dockerOk}`;
+        }
+        updateSetupBanner(data);
+    } catch (e) {
+        const banner = document.getElementById("setup-banner");
+        const text = document.getElementById("setup-banner-text");
+        if (banner && text) {
+            text.textContent = "OpenDesktop API offline — start uvicorn server.main:app on port 8000";
+            banner.hidden = false;
+        }
+    }
+}
+
+function updateSetupBanner(health) {
+    const banner = document.getElementById("setup-banner");
+    const text = document.getElementById("setup-banner-text");
+    if (!banner || !text) return;
+    if (sessionStorage.getItem("opendesktop-banner-dismissed") === "1") {
+        banner.hidden = true;
+        return;
+    }
+    if (!health.api_key_configured) {
+        text.textContent = "No LLM API key configured — add CHAT_API_KEY in .env or use API Key Settings.";
+        banner.hidden = false;
+        return;
+    }
+    if (!health.docker?.available) {
+        text.textContent = "Docker is not available — sandbox automation requires Docker.";
+        banner.hidden = false;
+        return;
+    }
+    banner.hidden = true;
 }
 
 function setupEventListeners() {
@@ -223,13 +272,25 @@ function setupEventListeners() {
     if (btnRunAgent) btnRunAgent.addEventListener("click", () => runCampaign());
     if (btnAddComputer) btnAddComputer.addEventListener("click", () => createMachine());
 
-    if (btnTabOperator && btnTabDeveloper) {
-        btnTabOperator.addEventListener("click", () => setMainTab("operator"));
-        btnTabDeveloper.addEventListener("click", () => setMainTab("developer"));
-    }
+    if (btnTabChat) btnTabChat.addEventListener("click", () => setMainTab("chat"));
+    if (btnTabOperator) btnTabOperator.addEventListener("click", () => setMainTab("operator"));
+    if (btnTabDeveloper) btnTabDeveloper.addEventListener("click", () => setMainTab("developer"));
 
     if (btnApiKeys) btnApiKeys.addEventListener("click", () => modalApi.classList.add("open"));
     if (btnCloseModal) btnCloseModal.addEventListener("click", () => modalApi.classList.remove("open"));
+
+    const btnBannerKey = document.getElementById("btn-banner-api-key");
+    if (btnBannerKey && modalApi) {
+        btnBannerKey.addEventListener("click", () => modalApi.classList.add("open"));
+    }
+    const btnDismissBanner = document.getElementById("btn-dismiss-banner");
+    if (btnDismissBanner) {
+        btnDismissBanner.addEventListener("click", () => {
+            sessionStorage.setItem("opendesktop-banner-dismissed", "1");
+            const banner = document.getElementById("setup-banner");
+            if (banner) banner.hidden = true;
+        });
+    }
 
     // Helper function to save API Key to backend
     async function saveKey(keyVal, statusEl) {
@@ -246,6 +307,7 @@ function setupEventListeners() {
                     statusEl.style.display = "block";
                     setTimeout(() => { statusEl.style.display = "none"; }, 2000);
                 }
+                fetchEngineStatus();
                 return true;
             }
         } catch (e) {
@@ -277,17 +339,13 @@ function setupEventListeners() {
 }
 
 function setMainTab(tab) {
-    if (tab === "operator") {
-        containerOperator.style.display = "grid";
-        containerDeveloper.style.display = "none";
-        btnTabOperator.classList.add("active");
-        btnTabDeveloper.classList.remove("active");
-    } else {
-        containerOperator.style.display = "none";
-        containerDeveloper.style.display = "grid";
-        btnTabOperator.classList.remove("active");
-        btnTabDeveloper.classList.add("active");
-    }
+    const show = (el, visible) => { if (el) el.style.display = visible ? "grid" : "none"; };
+    show(containerChat, tab === "chat");
+    show(containerOperator, tab === "operator");
+    show(containerDeveloper, tab === "developer");
+    if (btnTabChat) btnTabChat.classList.toggle("active", tab === "chat");
+    if (btnTabOperator) btnTabOperator.classList.toggle("active", tab === "operator");
+    if (btnTabDeveloper) btnTabDeveloper.classList.toggle("active", tab === "developer");
 }
 
 async function fetchMachines() {

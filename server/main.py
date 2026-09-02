@@ -10,14 +10,28 @@ import base64
 from typing import Optional, List
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, BackgroundTasks, Request, Header
 from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .docker_manager import sandbox_manager
+from .sandbox_factory import sandbox_manager
 from .orchestrator import orchestrator
+from . import memory
+from .chat_service import chat_service
+from .persona import get_greeting, load_persona
+from .playbook_executor import list_playbooks
+from .config import AUTO_PROVISION_FLEET, SANDBOX_MODE, SCHEDULER_ENABLED
+from .workerhub import get_workerhub_catalog
+from .audit import init_audit, list_audit, verify_chain
+from .skills import list_skills_catalog
+from .tools import list_tools, call_tool
+from .gateway import dispatch as gateway_dispatch
+from .scheduler import init_schedules, create_schedule, list_schedules, scheduler_loop
+from .runtime import verify_api_token
+from .health import get_health
+from .workflow_loader import load_workflow_files
 
 
 # WebSocket connection manager
@@ -106,9 +120,9 @@ def ensure_streaming(machine_id: str):
 
 # FastAPI App
 app = FastAPI(
-    title="OpenDesktop Engine",
-    version="2.0.0",
-    description="Cloud desktops for AI agents. Powered by Docker and computer control vision.",
+    title="OpenDesktop",
+    version="2.1.0",
+    description="Open source desktop agent platform. OpenWorker chat + sandbox automation.",
 )
 
 app.add_middleware(
@@ -142,11 +156,55 @@ class RunPlaybookRequest(BaseModel):
     prompt: str
 
 
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+    persona_id: Optional[str] = "openworker"
+
+
+class CreateSessionRequest(BaseModel):
+    persona_id: Optional[str] = "openworker"
+
+
+class GatewayDispatchRequest(BaseModel):
+    channel: str
+    channel_id: str
+    message: str
+    user_id: Optional[str] = None
+    persona_id: Optional[str] = "openworker"
+
+
+class CreateScheduleRequest(BaseModel):
+    name: str
+    prompt: str
+    interval_seconds: int = 86400
+    playbook_id: Optional[str] = None
+
+
+class ToolCallRequest(BaseModel):
+    name: str
+    arguments: dict = {}
+
+
 # ── REST Endpoints ────────────────────────────────────
 
 @app.on_event("startup")
 async def startup_event():
-    """Provision default fleet machines on startup."""
+    """Initialize DB, scheduler, and optionally provision default fleet."""
+    memory.init_db()
+    init_audit()
+    init_schedules()
+    if hasattr(sandbox_manager, "reconcile_from_docker"):
+        await sandbox_manager.reconcile_from_docker()
+    imported = load_workflow_files()
+    if imported:
+        print(f"[Startup] Loaded {len(imported)} workflow(s) from workflows/")
+    if SCHEDULER_ENABLED:
+        asyncio.create_task(scheduler_loop(manager.broadcast_action))
+        print("[Startup] Scheduler enabled")
+    if not AUTO_PROVISION_FLEET:
+        print("[Startup] AUTO_PROVISION_FLEET=false — skipping default machines")
+        return
     fleet = [
         ("Agent Machine #1", 1280, 800),
         ("Agent Machine #2", 1280, 800),
@@ -162,12 +220,18 @@ async def startup_event():
 @app.get("/")
 def root():
     return {
-        "platform": "OpenDesktop Engine",
-        "version": "2.0.0",
+        "platform": "OpenDesktop",
+        "agent": "OpenWorker",
+        "version": "2.1.0",
         "status": "online",
-        "mode": "remote-docker",
-        "vps": "Hetzner (46.225.66.39)",
+        "sandbox_mode": SANDBOX_MODE,
+        "tagline": "Open source desktop agent",
     }
+
+
+@app.get("/api/v1/health")
+async def health_check():
+    return await get_health()
 
 
 @app.get("/api/v1/machines")
@@ -248,33 +312,159 @@ class SetApiKeyRequest(BaseModel):
 async def set_api_key(req: SetApiKeyRequest):
     key = req.api_key.strip()
     os.environ["VISION_API_KEY"] = key
+    os.environ["CHAT_API_KEY"] = key
     return {"status": "success", "message": "API key updated successfully!"}
+
+
+# ── OpenWorker Chat API ───────────────────────────────
+
+@app.post("/api/v1/sessions")
+async def create_session(req: CreateSessionRequest):
+    session = memory.create_session(persona_id=req.persona_id or "openworker")
+    persona = load_persona(session["persona_id"])
+    greeting = get_greeting(session["persona_id"])
+    memory.add_message(session["id"], "assistant", greeting, {"intent": "greeting"})
+    return {
+        "session": session,
+        "persona": {"id": persona.get("id"), "name": persona.get("name")},
+        "greeting": greeting,
+    }
+
+
+@app.get("/api/v1/sessions")
+def list_sessions():
+    return {"sessions": memory.list_sessions()}
+
+
+@app.get("/api/v1/sessions/{session_id}")
+def get_session_detail(session_id: str):
+    session = memory.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {
+        "session": session,
+        "messages": memory.get_messages(session_id),
+    }
+
+
+@app.post("/api/v1/chat")
+async def chat(req: ChatRequest, background_tasks: BackgroundTasks):
+    if req.session_id:
+        session = memory.get_session(req.session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        session_id = req.session_id
+    else:
+        session = memory.create_session(persona_id=req.persona_id or "openworker")
+        session_id = session["id"]
+
+    result = await chat_service.handle_message(
+        session_id, req.message, manager.broadcast_action
+    )
+    return result
+
+
+@app.get("/api/v1/personas")
+def get_personas():
+    from pathlib import Path
+    from .config import PERSONAS_DIR
+    personas = []
+    for path in PERSONAS_DIR.glob("*.yaml"):
+        import yaml
+        with open(path) as f:
+            data = yaml.safe_load(f)
+        personas.append({
+            "id": data.get("id", path.stem),
+            "name": data.get("name"),
+            "tagline": data.get("tagline"),
+            "description": data.get("description"),
+        })
+    return {"personas": personas}
+
+
+@app.get("/api/v1/playbooks")
+def get_playbooks():
+    return {"playbooks": list_playbooks()}
+
+
+@app.get("/api/v1/skills")
+def get_skills():
+    return {"skills": list_skills_catalog()}
+
+
+@app.get("/api/v1/tools")
+def get_tools():
+    return {"tools": list_tools()}
+
+
+@app.get("/api/v1/workerhub")
+def workerhub_catalog():
+    return get_workerhub_catalog()
+
+
+@app.get("/api/v1/audit")
+def get_audit_log():
+    return {"entries": list_audit(), "chain": verify_chain()}
+
+
+@app.post("/api/v1/tools/call")
+async def invoke_tool(req: ToolCallRequest, authorization: Optional[str] = Header(None)):
+    if not verify_api_token(authorization):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        result = await call_tool(req.name, req.arguments)
+        return {"status": "success", "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/v1/gateway/dispatch")
+async def gateway_dispatch_endpoint(req: GatewayDispatchRequest, authorization: Optional[str] = Header(None)):
+    """Unified entry for Discord, Telegram, and other channel adapters."""
+    if not verify_api_token(authorization):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return await gateway_dispatch(
+        req.channel,
+        req.channel_id,
+        req.message,
+        req.user_id,
+        req.persona_id or "openworker",
+        manager.broadcast_action,
+    )
+
+
+@app.get("/api/v1/schedules")
+def get_schedules():
+    return {"schedules": list_schedules()}
+
+
+@app.post("/api/v1/schedules")
+def post_schedule(req: CreateScheduleRequest):
+    sched = create_schedule(req.name, req.prompt, req.interval_seconds, req.playbook_id)
+    return {"status": "created", "schedule": sched}
 
 
 # ── Playbooks / Orchestration ─────────────────────────
 
 @app.post("/api/v1/playbooks/run")
-async def run_playbook(req: RunPlaybookRequest, background_tasks: BackgroundTasks):
-    machines = [m for m in sandbox_manager.list_sandboxes() if m.get("status") == "running"]
-    if machines:
-        machine_id = machines[0]["id"]
-    else:
-        machine_data = await sandbox_manager.create_sandbox(name="Agent Machine")
-        machine_id = machine_data["id"]
-        # Wait briefly for startup
-        await asyncio.sleep(5)
+async def run_playbook_endpoint(req: RunPlaybookRequest, background_tasks: BackgroundTasks):
+    from .playbook_executor import run_playbook as execute_playbook
+    from .agent_runner import agent_runner
 
-    # Run agent in background
+    playbook_id = req.playbook_id or "pb_web_research"
+
     background_tasks.add_task(
-        orchestrator.run_single_task,
-        machine_id,
+        execute_playbook,
+        playbook_id,
         req.prompt,
+        sandbox_manager,
+        agent_runner,
         manager.broadcast_action,
     )
 
     return {
         "status": "started",
-        "machine_id": machine_id,
+        "playbook_id": playbook_id,
         "prompt": req.prompt,
     }
 
