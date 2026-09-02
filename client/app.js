@@ -458,7 +458,7 @@ async function runCampaign() {
 
     const playbookId = playbookSelect ? playbookSelect.value : "pb_web_research";
     if (badgeActivePlaybook) {
-        badgeActivePlaybook.textContent = `PLAYBOOK: ${playbookId.toUpperCase()}`;
+        badgeActivePlaybook.textContent = `TEMPLATE: ${playbookId.toUpperCase()}`;
     }
 
     if (btnRunAgent) {
@@ -479,7 +479,7 @@ async function runCampaign() {
         setTimeout(() => {
             if (btnRunAgent) {
                 btnRunAgent.disabled = false;
-                btnRunAgent.textContent = "Execute Fleet Campaign";
+                btnRunAgent.textContent = "Run Campaign Template";
             }
         }, 3000);
     }
