@@ -250,7 +250,7 @@ function updateSetupBanner(health) {
         return;
     }
     if (!health.api_key_configured) {
-        text.textContent = "No LLM API key configured — add CHAT_API_KEY in .env or use API Key Settings.";
+        text.textContent = "No API key configured — add OPENROUTER_API_KEY to .env or paste your sk-or- key in API Key Settings.";
         banner.hidden = false;
         return;
     }

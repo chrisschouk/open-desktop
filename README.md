@@ -5,10 +5,11 @@ OpenDesktop is the open source platform. **OpenWorker** is the conversational de
 ## Quick start
 
 ```bash
-git clone https://github.com/totalaudiopromo/open-desktop.git
+git clone https://github.com/chrisschouk/open-desktop.git
 cd open-desktop
 cp .env.example .env
-# Add your CHAT_API_KEY and VISION_API_KEY
+# One OpenRouter key covers chat + desktop — see docs/API_KEYS.md
+# OPENROUTER_API_KEY=sk-or-v1-...
 
 # Build sandbox image (first time only)
 docker build -t opendesktop-sandbox:latest -f sandbox-engine/Dockerfile.sandbox sandbox-engine/

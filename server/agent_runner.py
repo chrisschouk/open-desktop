@@ -83,7 +83,12 @@ class AgentRunner:
 
         messages.append({"role": "user", "content": content})
 
-        api_key = os.getenv("VISION_API_KEY") or os.getenv("API_KEY") or VISION_API_KEY
+        api_key = (
+            os.getenv("VISION_API_KEY")
+            or os.getenv("OPENROUTER_API_KEY")
+            or os.getenv("API_KEY")
+            or VISION_API_KEY
+        )
         
         if api_key.startswith("sk-proj-") or (api_key.startswith("sk-") and not api_key.startswith("sk-or-") and not api_key.startswith("sk-ant-")):
             url = "https://api.openai.com/v1/chat/completions"

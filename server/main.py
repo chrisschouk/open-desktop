@@ -29,7 +29,7 @@ from .skills import list_skills_catalog
 from .tools import list_tools, call_tool
 from .gateway import dispatch as gateway_dispatch
 from .scheduler import init_schedules, create_schedule, list_schedules, scheduler_loop
-from .runtime import verify_api_token
+from .runtime import verify_api_token, can_set_api_key
 from .health import get_health
 from .workflow_loader import load_workflow_files
 
@@ -309,10 +309,18 @@ class SetApiKeyRequest(BaseModel):
     api_key: str
 
 @app.post("/api/v1/keys/set")
-async def set_api_key(req: SetApiKeyRequest):
-    key = req.api_key.strip()
-    os.environ["VISION_API_KEY"] = key
-    os.environ["CHAT_API_KEY"] = key
+async def set_api_key(
+    req: SetApiKeyRequest,
+    request: Request,
+    authorization: Optional[str] = Header(None),
+):
+    if not can_set_api_key(request, authorization):
+        raise HTTPException(
+            status_code=403,
+            detail="API keys can only be set from localhost/LAN or with OPENDESKTOP_API_TOKEN",
+        )
+    from .config import apply_llm_api_key
+    apply_llm_api_key(req.api_key)
     return {"status": "success", "message": "API key updated successfully!"}
 
 

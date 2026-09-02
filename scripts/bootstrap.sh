@@ -15,7 +15,8 @@ fi
 if [ ! -f .env ]; then
   echo "==> Creating .env from .env.example"
   cp .env.example .env
-  echo "    Edit .env and add CHAT_API_KEY / VISION_API_KEY before chatting."
+  echo "    Edit .env and add OPENROUTER_API_KEY (sk-or-v1-...) — one key for chat + desktop."
+  echo "    See docs/API_KEYS.md"
 fi
 
 echo "==> Building sandbox image (opendesktop-sandbox:latest)"
