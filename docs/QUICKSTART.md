@@ -39,7 +39,7 @@ uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
 cd client && python3 -m http.server 8888
 ```
 
-Open http://localhost:8888 — OpenWorker Chat is the default tab.
+Open http://localhost:8888 — Workers view on desktop; phones get a Grok-style mobile roster automatically (or use `?mobile=1`). Add to Home Screen for a standalone app.
 
 ---
 
