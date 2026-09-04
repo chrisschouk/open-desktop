@@ -54,6 +54,7 @@ def load_workflow_files(workflows_dir: Path = WORKFLOWS_DIR) -> List[dict]:
             prompt=prompt,
             interval_seconds=interval,
             playbook_id=playbook_id,
+            worker_id=data.get("worker_id"),
         )
         seen_names.add(name)
         imported.append({"file": path.name, "schedule_id": sched["id"], "name": name})

@@ -16,9 +16,14 @@ from .browser_research import browser_research
 from . import hooks
 from .runtime import ensure_running_sandbox
 from .audit import append_audit
+from .workers import DEFAULT_WORKER_ID, set_presence, sync_presence_from_session
+from .artifacts import create_artifact, artifact_ref_payload
 
 
 class ChatService:
+    def _worker_id(self, session: dict) -> str:
+        return session.get("worker_id") or DEFAULT_WORKER_ID
+
     async def handle_message(
         self,
         session_id: str,
@@ -31,6 +36,8 @@ class ChatService:
         if not session:
             return {"error": "Session not found"}
 
+        worker_id = self._worker_id(session)
+
         if session.get("status") == "working":
             reply = "Still working on the previous task — I'll update you when it's done."
             memory.add_message(session_id, "assistant", reply, {
@@ -41,12 +48,14 @@ class ChatService:
                 "intent": "busy",
                 "reply": reply,
                 "status": "working",
+                "worker_id": worker_id,
                 "trace_id": trace_id,
             }
 
         memory.add_message(session_id, "user", message, {"trace_id": trace_id} if trace_id else None)
         history = memory.get_messages(session_id)
         persona_id = session.get("persona_id", "openworker")
+        set_presence(worker_id, "thinking", current_action="Reading your message")
 
         matched_skills = match_skills(message)
         skill_playbook = matched_skills[0].get("playbook_id") if matched_skills else None
@@ -81,13 +90,15 @@ class ChatService:
             skill_ctx = skills_context_for_message(message)
             enriched = f"{skill_ctx}\n\n{message}" if skill_ctx else message
             reply = await chat_reply(enriched, history[:-1], persona_id)
-            memory.add_message(session_id, "assistant", reply, {"intent": "chat"})
+            memory.add_message(session_id, "assistant", reply, {"intent": "chat"}, kind="text")
             memory.update_session(session_id, status="idle")
+            set_presence(worker_id, "idle", current_action=None)
             return {
                 "session_id": session_id,
                 "intent": "chat",
                 "reply": reply,
                 "status": "idle",
+                "worker_id": worker_id,
                 "skills": [s["id"] for s in matched_skills],
                 "trace_id": trace_id,
             }
@@ -96,13 +107,15 @@ class ChatService:
             reply = await browser_research(message, persona_id)
             memory.add_message(session_id, "assistant", reply, {
                 "intent": "browser", "status": "idle", "trace_id": trace_id,
-            })
+            }, kind="text")
             memory.update_session(session_id, status="idle")
+            set_presence(worker_id, "idle", current_action=None)
             return {
                 "session_id": session_id,
                 "intent": "browser",
                 "reply": reply,
                 "status": "idle",
+                "worker_id": worker_id,
                 "trace_id": trace_id,
             }
 
@@ -129,8 +142,16 @@ class ChatService:
             "playbook_id": playbook_id,
             "status": "working",
             "trace_id": trace_id,
-        })
+        }, kind="text")
+        memory.add_message(
+            session_id,
+            "assistant",
+            "Desktop sandbox activating…",
+            {"intent": intent, "computer": "status"},
+            kind="computer_status",
+        )
         memory.update_session(session_id, playbook_id=playbook_id)
+        set_presence(worker_id, "working", current_action=ack[:120])
 
         asyncio.create_task(
             self._run_task(session_id, intent, task_prompt, playbook_id, broadcast_action, trace_id)
@@ -141,6 +162,7 @@ class ChatService:
             "intent": intent,
             "reply": ack,
             "status": "working",
+            "worker_id": worker_id,
             "playbook_id": playbook_id,
             "skills": [s["id"] for s in matched_skills],
             "trace_id": trace_id,
@@ -186,6 +208,16 @@ class ChatService:
             else:
                 machine_id = await ensure_running_sandbox(sandbox_manager, "OpenWorker Agent")
                 memory.update_session(session_id, machine_id=machine_id)
+                session = memory.get_session(session_id) or {}
+                from .workers import update_worker
+                update_worker(self._worker_id(session), preferred_machine_id=machine_id)
+                memory.add_message(
+                    session_id,
+                    "assistant",
+                    f"Computer online · `{machine_id}`",
+                    {"machine_id": machine_id},
+                    kind="computer_status",
+                )
                 result = await orchestrator.run_single_task(
                     machine_id, task_prompt, broadcast_action
                 )
@@ -206,14 +238,34 @@ class ChatService:
             })
 
             summary = result.get("summary", result.get("status", "Task finished"))
+            session = memory.get_session(session_id) or {}
+            worker_id = self._worker_id(session)
             memory.add_message(session_id, "assistant", f"Done. {summary}", {
                 "intent": intent,
                 "status": "completed",
                 "result": result,
                 "trace_id": trace_id,
                 "machine_id": result.get("machine_id"),
-            })
+            }, kind="text")
+            art = create_artifact(
+                worker_id=worker_id,
+                title=f"Task result — {intent}",
+                kind="report",
+                session_id=session_id,
+                text=str(summary),
+                meta={"intent": intent, "machine_id": result.get("machine_id"), "trace_id": trace_id},
+            )
+            memory.add_message(
+                session_id,
+                "assistant",
+                art["title"],
+                metadata=artifact_ref_payload(art),
+                kind="artifact_ref",
+            )
             memory.update_session(session_id, status="idle")
+            set_presence(worker_id, "done", current_action=None)
+            sync_presence_from_session(session_id, tier="T2")
+            set_presence(worker_id, "idle", current_action=None)
         except Exception as e:
             if trace_id:
                 append_audit("chat_error", {
@@ -223,8 +275,10 @@ class ChatService:
                 })
             memory.add_message(session_id, "assistant", f"Hit an error: {e}", {
                 "status": "error", "trace_id": trace_id,
-            })
+            }, kind="event")
             memory.update_session(session_id, status="error")
+            session = memory.get_session(session_id) or {}
+            set_presence(self._worker_id(session), "blocked", current_action=str(e)[:120])
 
 
 chat_service = ChatService()

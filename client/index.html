@@ -15,7 +15,7 @@
         <button class="btn btn-secondary btn-sm" id="btn-banner-api-key">Add API Key</button>
         <button class="btn btn-secondary btn-sm setup-banner-dismiss" id="btn-dismiss-banner" aria-label="Dismiss">&times;</button>
     </div>
-    <div class="app-container">
+    <div class="app-container app-shell">
         <!-- Top Navigation Bar -->
         <header class="navbar">
             <div class="nav-brand">
@@ -28,206 +28,195 @@
                 </div>
             </div>
 
-            <div class="status-pill">
+            <div class="status-pill" id="engine-status-pill">
                 <span class="status-dot"></span>
-                <span id="engine-status">Open source desktop agent</span>
+                <span id="engine-status">Worker roster</span>
             </div>
 
             <div class="nav-actions">
                 <div class="view-mode-toggle">
-                    <button class="btn btn-secondary btn-sm active" id="btn-tab-chat">OpenWorker Chat</button>
-                    <button class="btn btn-secondary btn-sm" id="btn-tab-operator">Operator Fleet</button>
-                    <button class="btn btn-secondary btn-sm" id="btn-tab-developer">Developer Console</button>
+                    <button class="btn btn-secondary btn-sm active" id="btn-tab-chat">Workers</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-tab-operator" title="Power-user fleet view">Operator</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-tab-developer" title="SDK &amp; architecture">Developer</button>
                 </div>
-                <button class="btn btn-secondary" id="btn-api-keys">
-                    API Key (OpenRouter)
-                </button>
+                <button class="btn btn-secondary" id="btn-api-keys">API Key</button>
             </div>
         </header>
 
-        <!-- Machine Fleet Bar -->
-        <div class="computer-tabs-bar" id="computer-tabs-bar">
-            <button class="tab-btn active" data-id="cmp_hubert">
-                <span class="tab-dot"></span>
-                <span>Machine #1 (Primary Agent)</span>
-            </button>
-            <button class="add-tab-btn" id="btn-add-computer">
-                + Provision Machine
-            </button>
-            <div class="fleet-capacity-badge">
-                <span id="active-computer-count">1</span> / 15 Machines Active
-            </div>
-        </div>
+        <!-- WORKER SHELL (default) -->
+        <main class="main-content worker-shell" id="container-chat">
+            <aside class="worker-roster" id="worker-roster" aria-label="Worker roster">
+                <div class="roster-header">
+                    <h2>Workers</h2>
+                    <button class="btn btn-secondary btn-sm" id="btn-add-worker" title="New Worker">+</button>
+                </div>
+                <ul class="roster-list" id="roster-list"></ul>
+                <p class="roster-hint">Persistent agents — not chat history. Hover an avatar for what they’re doing.</p>
+            </aside>
 
-        <!-- OPENWORKER CHAT (default view) -->
-        <main class="main-content chat-layout" id="container-chat">
-            <section class="chat-panel">
-                <div class="chat-header">
-                    <h2>OpenWorker</h2>
-                    <span class="badge badge-green" id="chat-status-badge">Ready</span>
+            <section class="chat-panel worker-chat">
+                <div class="chat-header worker-header">
+                    <div class="worker-header-identity">
+                        <div class="worker-avatar" id="active-worker-avatar" data-presence="idle" data-avatar="openworker" title="">
+                            <span class="avatar-face" aria-hidden="true"></span>
+                            <span class="presence-ring"></span>
+                        </div>
+                        <div>
+                            <h2 id="active-worker-name">OpenWorker</h2>
+                            <p class="worker-role" id="active-worker-role">Your open source desktop agent</p>
+                        </div>
+                    </div>
+                    <div class="worker-header-actions">
+                        <span class="computer-status-chip" id="computer-status-chip" data-active="false" title="Worker’s computer">
+                            <span class="computer-status-dot"></span>
+                            Computer
+                        </span>
+                        <button class="btn btn-secondary btn-sm" id="btn-toggle-preview" aria-pressed="false">Preview</button>
+                        <button class="btn btn-secondary btn-sm" id="btn-takeover">Takeover</button>
+                        <button class="btn btn-secondary btn-sm" id="btn-hand-back" hidden>Hand back</button>
+                        <span class="badge badge-green" id="chat-status-badge">Ready</span>
+                    </div>
                 </div>
                 <div class="chat-messages" id="chat-messages"></div>
+                <div class="routines-bar" id="routines-bar">
+                    <div class="routines-bar-header">
+                        <span>Routines</span>
+                        <button class="btn btn-secondary btn-sm" id="btn-add-routine">+ Routine</button>
+                    </div>
+                    <div class="routines-list" id="routines-list"></div>
+                </div>
                 <div class="chat-chips">
                     <button class="chip-btn chat-chip" data-prompt="Research 10 UK indie radio pluggers for a rock release">UK radio pluggers</button>
                     <button class="chip-btn chat-chip" data-prompt="Find playlist curators on SubmitHub for electronic music">Playlist curators</button>
                     <button class="chip-btn chat-chip" data-prompt="What can you actually do?">What can you do?</button>
+                    <button class="chip-btn chat-chip" data-prompt="Create a morning briefing Routine for me every weekday at 8am summarizing open tasks">Add morning Routine</button>
                 </div>
                 <div class="chat-input-area">
-                    <textarea id="chat-input" class="text-input textarea-input" rows="2" placeholder="Tell OpenWorker what you need done…"></textarea>
+                    <textarea id="chat-input" class="text-input textarea-input" rows="2" placeholder="Tell this Worker what you need done…"></textarea>
                     <button class="btn btn-primary" id="btn-chat-send">Send</button>
                 </div>
             </section>
-            <aside class="chat-side-panel">
+
+            <aside class="chat-side-panel computer-preview" id="computer-preview" data-open="false" hidden>
                 <div class="live-preview">
                     <div class="live-preview-header">
-                        <span>Live Desktop</span>
-                        <span class="badge badge-purple">SANDBOX</span>
+                        <span>Their computer</span>
+                        <span class="badge badge-purple">PREVIEW</span>
+                        <button class="btn btn-secondary btn-sm" id="btn-close-preview" aria-label="Close preview">×</button>
                     </div>
                     <img id="chat-live-screen" alt="Live sandbox screen" src="" />
+                    <p class="preview-hint">Glance only — takeover when they need you.</p>
                 </div>
-                <div class="card log-card">
+                <div class="card log-card debug-stream" id="debug-stream" hidden>
                     <div class="card-header">
                         <div class="card-title">Action Stream</div>
                     </div>
-                    <div class="card-body log-feed" id="chat-log-feed" style="max-height:200px; overflow-y:auto;"></div>
+                    <div class="card-body log-feed" id="chat-log-feed" style="max-height:160px; overflow-y:auto;"></div>
                 </div>
             </aside>
         </main>
 
-        <!-- OPERATOR VIEW CONTAINER -->
+        <!-- Takeover overlay -->
+        <div class="takeover-overlay" id="takeover-overlay" hidden>
+            <div class="takeover-bar">
+                <span>You’re on their computer — hand back when done.</span>
+                <button class="btn btn-primary btn-sm" id="btn-takeover-hand-back">Hand back</button>
+            </div>
+            <div class="takeover-screen">
+                <img id="takeover-screen-img" alt="Takeover desktop" src="" />
+                <iframe id="takeover-novnc" title="noVNC takeover" hidden></iframe>
+            </div>
+        </div>
+
+        <!-- OPERATOR VIEW (power-user) -->
         <main class="main-content" id="container-operator" style="display: none;">
-            <!-- Multi-Agent Screen Grid Section -->
+            <div class="computer-tabs-bar" id="computer-tabs-bar">
+                <button class="tab-btn active" data-id="cmp_hubert">
+                    <span class="tab-dot"></span>
+                    <span>Machine #1</span>
+                </button>
+                <button class="add-tab-btn" id="btn-add-computer">+ Provision Machine</button>
+                <div class="fleet-capacity-badge">
+                    <span id="active-computer-count">1</span> / 15 Machines
+                </div>
+            </div>
             <section class="viewport-section" id="grid-viewport-section">
                 <div class="grid-card-wrapper">
                     <div class="grid-header">
-                        <h3>Fleet Control Plane - Multi-Sandbox Execution Grid</h3>
+                        <h3>Operator Fleet — multi-sandbox debug</h3>
                         <div style="display:flex; gap:8px;">
                             <span class="badge badge-purple" id="badge-active-playbook">TEMPLATE: WEB RESEARCH</span>
-                            <span class="badge badge-green">MACHINES RUNNING</span>
+                            <span class="badge badge-green">POWER USER</span>
                         </div>
                     </div>
-
-                    <div class="fleet-2x2-grid" id="machines-grid">
-                        <!-- Machine viewers injected dynamically by app.js -->
-                    </div>
+                    <div class="fleet-2x2-grid" id="machines-grid"></div>
                 </div>
             </section>
-
-            <!-- Right Sidebar: Fleet Orchestration Controls -->
             <section class="agent-section">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5E6AD2" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                            Fleet Orchestration Dispatch
-                        </div>
+                        <div class="card-title">Fleet Orchestration</div>
                     </div>
-
                     <div class="card-body">
                         <p class="input-hint" style="margin-bottom:12px; color:var(--text-secondary); font-size:0.8rem;">
-                            Campaign templates describe multi-step workflows. Today they run on <strong>one sandbox</strong> with steps injected into the vision agent prompt — fleet routing is on the roadmap.
+                            Prefer the Workers view for day-to-day work. Fleet dispatch is for parallel sandbox debugging.
                         </p>
-                        <!-- Playbook Category Filter & Selector -->
                         <div class="prompt-group">
-                            <label class="input-label">Select Campaign Template</label>
+                            <label class="input-label">Campaign Template</label>
                             <select id="playbook-select" class="text-input">
-                                <option value="pb_web_research">Web Research (4 steps · single sandbox)</option>
-                                <option value="pb_data_entry_rpa">Cross-App RPA (template)</option>
-                                <option value="pb_lead_gen_campaign">Lead Generation (template)</option>
-                                <option value="pb_music_pr_discovery">Music PR Discovery (5 steps · single sandbox)</option>
+                                <option value="pb_web_research">Web Research</option>
+                                <option value="pb_data_entry_rpa">Cross-App RPA</option>
+                                <option value="pb_lead_gen_campaign">Lead Generation</option>
+                                <option value="pb_music_pr_discovery">Music PR Discovery</option>
                             </select>
                         </div>
-
                         <div class="prompt-group">
-                            <label class="input-label">OpenRouter / API key</label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="password" id="sidebar-api-key" class="text-input" placeholder="sk-or-v1-... or sk-proj-..." style="flex:1; font-family:var(--font-mono); font-size:0.75rem;">
-                                <button type="button" class="btn btn-secondary" id="btn-save-sidebar-key">Save Key</button>
-                            </div>
-                            <span id="sidebar-key-status" style="font-size:0.75rem; color:var(--accent-emerald); display:none; margin-top:4px;">API Key saved to engine</span>
+                            <label class="input-label">Campaign Goal</label>
+                            <textarea id="agent-prompt" class="text-input textarea-input" placeholder="Campaign objective…"></textarea>
                         </div>
-
-                        <div class="prompt-group">
-                            <label class="input-label">Campaign Goal Instruction</label>
-                            <textarea id="agent-prompt" class="text-input textarea-input" placeholder="Enter campaign objective (e.g. 'Research 10 competitors for a B2B SaaS platform and save summary report to Obsidian Vault')"></textarea>
-                        </div>
-
-                        <!-- Horizontal Preset Chips -->
                         <div class="quick-prompts">
-                            <button class="chip-btn" data-prompt="Research 10 competitors for a B2B SaaS platform and write summary report to Obsidian Vault">
-                                B2B SaaS Research
-                            </button>
-                            <button class="chip-btn" data-prompt="Automate uploading invoices and cross-app form entries">
-                                Cross-App RPA
-                            </button>
-                            <button class="chip-btn" data-prompt="Research brand Total Audio Promo and founder Chris Schofield, navigate to TotalAudioPromo.com and report findings.">
-                                Music PR Campaign
-                            </button>
+                            <button class="chip-btn" data-prompt="Research 10 competitors for a B2B SaaS platform">B2B Research</button>
+                            <button class="chip-btn" data-prompt="Research brand Total Audio Promo and founder Chris Schofield">Music PR</button>
                         </div>
-
-                        <button class="btn btn-primary btn-full" id="btn-run-agent">
-                            Run Campaign Template
-                        </button>
+                        <button class="btn btn-primary btn-full" id="btn-run-agent">Run Template</button>
                     </div>
                 </div>
-
-                <!-- Action Stream Timeline -->
                 <div class="card log-card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 14 15 20 9"/><polyline points="14 9 20 9 20 15"/></svg>
-                            Fleet Telemetry & Action Stream
-                        </div>
+                        <div class="card-title">Fleet Telemetry</div>
                     </div>
-                    <div class="card-body log-feed" id="log-feed">
-                        <!-- Action steps injected dynamically -->
-                    </div>
+                    <div class="card-body log-feed" id="log-feed"></div>
                 </div>
             </section>
         </main>
 
-        <!-- DEVELOPER CONSOLE CONTAINER -->
+        <!-- DEVELOPER CONSOLE -->
         <main class="main-content" id="container-developer" style="display: none;">
             <section class="viewport-section" style="grid-column: span 2;">
                 <div class="grid-card-wrapper">
                     <div class="grid-header">
-                        <h3>OpenDesktop System Architecture & API Reference</h3>
-                        <span class="badge badge-purple">DEVELOPER CONSOLE</span>
+                        <h3>Developer Console</h3>
+                        <span class="badge badge-purple">SDK</span>
                     </div>
-
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
-                        <!-- Machine Templates Card -->
                         <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">Machine Templates Catalog</div>
-                            </div>
+                            <div class="card-header"><div class="card-title">Design primitives</div></div>
                             <div class="card-body">
                                 <div class="code-box">
-                                    <pre>{
-  "ops_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["chrome", "email"]},
-  "support_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["helpdesk_ui"]},
-  "rpa_machine": {"cpu": "2 vCPU", "ram": "4GB", "tools": ["playwright_stealth"]}
-}</pre>
+                                    <pre>Worker · Chat · Prompt · Tool · Artifact
+Presence: idle → thinking → working → waiting → blocked → done
+Computer: status → preview → takeover</pre>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- OpenDesktop SDK Code snippet -->
                         <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">OpenDesktop Python SDK (<code>open_desktop</code>)</div>
-                            </div>
+                            <div class="card-header"><div class="card-title">Agent loop</div></div>
                             <div class="card-body">
                                 <div class="code-box">
-                                    <pre>import open_desktop
-
-machine = open_desktop.Machine("mach_01", api_key="sk_live_opendesktop_...")
-session = open_desktop.Session(machine, job_name="B2B Research Task")
-
-session.open_url("https://www.google.com")
-session.fill_form({"q": "OpenDesktop Infrastructure"})
-session.run_playbook("pb_web_research", prompt="...")
-session.finish()</pre>
+                                    <pre>openworker orient
+openworker workers list
+openworker chat "…" --worker wrk_openworker
+openworker wait sess_…</pre>
                                 </div>
                             </div>
                         </div>
@@ -235,6 +224,50 @@ session.finish()</pre>
                 </div>
             </section>
         </main>
+
+        <!-- New Worker modal -->
+        <div class="modal-backdrop" id="modal-worker" hidden>
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>New Worker</h3>
+                    <button class="close-btn" id="btn-close-worker-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label class="input-label">Name</label>
+                    <input type="text" id="input-worker-name" class="text-input" placeholder="Music PR Worker">
+                    <label class="input-label" style="margin-top:12px;">Role</label>
+                    <input type="text" id="input-worker-role" class="text-input" placeholder="Coordinates outreach specialists">
+                    <label class="input-label" style="margin-top:12px;">Avatar</label>
+                    <select id="input-worker-avatar" class="text-input">
+                        <option value="openworker">OpenWorker</option>
+                        <option value="research">Research</option>
+                        <option value="music">Music</option>
+                        <option value="ops">Ops</option>
+                        <option value="default">Default</option>
+                    </select>
+                    <button class="btn btn-primary btn-full" id="btn-save-worker" style="margin-top:16px;">Create Worker</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Routine modal -->
+        <div class="modal-backdrop" id="modal-routine" hidden>
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>New Routine</h3>
+                    <button class="close-btn" id="btn-close-routine-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label class="input-label">Name</label>
+                    <input type="text" id="input-routine-name" class="text-input" placeholder="Morning briefing">
+                    <label class="input-label" style="margin-top:12px;">Prompt</label>
+                    <textarea id="input-routine-prompt" class="text-input textarea-input" rows="3" placeholder="Summarize open tasks…"></textarea>
+                    <label class="input-label" style="margin-top:12px;">Interval (seconds)</label>
+                    <input type="number" id="input-routine-interval" class="text-input" value="86400">
+                    <button class="btn btn-primary btn-full" id="btn-save-routine" style="margin-top:16px;">Create Routine</button>
+                </div>
+            </div>
+        </div>
 
         <!-- API Key Modal -->
         <div class="modal-backdrop" id="modal-api">
@@ -247,20 +280,13 @@ session.finish()</pre>
                     <div style="margin-bottom: 16px;">
                         <label class="input-label">OpenRouter key (one key for chat + desktop)</label>
                         <p style="font-size:0.8rem; color:var(--text-secondary); margin:4px 0 8px;">
-                            Paste your <code>sk-or-v1-...</code> key from openrouter.ai. Same key powers conversation and sandbox automation.
+                            Paste your <code>sk-or-v1-...</code> key from openrouter.ai.
                         </p>
                         <div style="display:flex; gap: 8px; margin-top: 6px;">
                             <input type="password" id="input-api-key" class="text-input" placeholder="sk-or-v1-..." style="flex:1;">
                             <button type="button" class="btn btn-primary" id="btn-save-api-key">Save Key</button>
                         </div>
                         <span id="key-save-status" style="font-size: 0.75rem; color: var(--accent-emerald); display:none; margin-top:4px;">API Key saved</span>
-                    </div>
-
-                    <p style="color: var(--text-secondary); font-size: 0.8rem;">Run declarative playbooks programmatically:</p>
-                    <div class="code-box">
-                        <pre>curl -X POST http://localhost:8000/api/v1/playbooks/run \
-  -H "Content-Type: application/json" \
-  -d '{"playbook_id": "pb_web_research", "prompt": "Research 10 B2B SaaS competitors"}'</pre>
                     </div>
                 </div>
             </div>

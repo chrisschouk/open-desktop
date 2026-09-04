@@ -39,6 +39,17 @@ from .agent_api import (
     new_trace_id,
     envelope_chat_response,
 )
+from . import workers as workers_mod
+from . import artifacts as artifacts_mod
+from .routines import (
+    create_routine,
+    list_routines,
+    get_routine,
+    pause_routine,
+    resume_routine,
+    delete_routine,
+)
+from . import groups as groups_mod
 
 
 # WebSocket connection manager
@@ -72,6 +83,19 @@ class ConnectionManager:
         """Broadcast an action event to all connected action WebSocket clients."""
         if "type" not in event:
             event["type"] = "action"
+        # Update Worker current_action from thought / action stream
+        try:
+            thought = event.get("thought") or event.get("action_type") or event.get("message")
+            if thought:
+                for w in workers_mod.list_workers():
+                    if w.get("preferred_machine_id") == machine_id or (
+                        w.get("presence") in ("working", "thinking") and not w.get("preferred_machine_id")
+                    ):
+                        workers_mod.set_current_action(w["id"], str(thought)[:160])
+                        event["worker_id"] = w["id"]
+                        break
+        except Exception:
+            pass
         text = json.dumps(event)
         dead = []
         for ws in self.action_connections:
@@ -167,6 +191,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
     persona_id: Optional[str] = "openworker"
+    worker_id: Optional[str] = None
     force_intent: Optional[str] = None
     trace_id: Optional[str] = None
 
@@ -179,6 +204,7 @@ class PlanRequest(BaseModel):
 
 class CreateSessionRequest(BaseModel):
     persona_id: Optional[str] = "openworker"
+    worker_id: Optional[str] = None
 
 
 class GatewayDispatchRequest(BaseModel):
@@ -191,11 +217,53 @@ class GatewayDispatchRequest(BaseModel):
     trace_id: Optional[str] = None
 
 
+class CreateWorkerRequest(BaseModel):
+    name: str
+    avatar: Optional[str] = "default"
+    role: Optional[str] = "general"
+    persona_ref: Optional[str] = "openworker"
+
+
+class UpdateWorkerRequest(BaseModel):
+    name: Optional[str] = None
+    avatar: Optional[str] = None
+    role: Optional[str] = None
+    persona_ref: Optional[str] = None
+    preferred_machine_id: Optional[str] = None
+    presence: Optional[str] = None
+    current_action: Optional[str] = None
+    memory: Optional[dict] = None
+
+
+class CreateRoutineRequest(BaseModel):
+    name: str
+    prompt: str
+    interval_seconds: int = 86400
+    playbook_id: Optional[str] = None
+    worker_id: Optional[str] = None
+
+
+class CreateArtifactRequest(BaseModel):
+    title: str
+    kind: Optional[str] = "file"
+    text: Optional[str] = None
+    session_id: Optional[str] = None
+    mime_type: Optional[str] = None
+    meta: Optional[dict] = None
+
+
+class CreateGroupRequest(BaseModel):
+    name: str
+    worker_ids: List[str]
+    coordinator_id: Optional[str] = None
+
+
 class CreateScheduleRequest(BaseModel):
     name: str
     prompt: str
     interval_seconds: int = 86400
     playbook_id: Optional[str] = None
+    worker_id: Optional[str] = None
 
 
 class ToolCallRequest(BaseModel):
@@ -207,8 +275,11 @@ class ToolCallRequest(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize DB, scheduler, and optionally provision default fleet."""
+    """Initialize DB, workers, scheduler, and optionally provision default fleet."""
     memory.init_db()
+    workers_mod.init_workers()
+    artifacts_mod.init_artifacts()
+    groups_mod.init_groups()
     init_audit()
     init_schedules()
     if hasattr(sandbox_manager, "reconcile_from_docker"):
@@ -362,20 +433,27 @@ async def set_api_key(
 
 @app.post("/api/v1/sessions")
 async def create_session(req: CreateSessionRequest):
-    session = memory.create_session(persona_id=req.persona_id or "openworker")
+    workers_mod.ensure_default_worker()
+    worker_id = req.worker_id or workers_mod.DEFAULT_WORKER_ID
+    worker = workers_mod.get_worker(worker_id)
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    persona_id = req.persona_id or worker.get("persona_ref") or "openworker"
+    session = memory.create_session(persona_id=persona_id, worker_id=worker_id)
     persona = load_persona(session["persona_id"])
     greeting = get_greeting(session["persona_id"])
-    memory.add_message(session["id"], "assistant", greeting, {"intent": "greeting"})
+    memory.add_message(session["id"], "assistant", greeting, {"intent": "greeting"}, kind="text")
     return {
         "session": session,
+        "worker": worker,
         "persona": {"id": persona.get("id"), "name": persona.get("name")},
         "greeting": greeting,
     }
 
 
 @app.get("/api/v1/sessions")
-def list_sessions():
-    return {"sessions": memory.list_sessions()}
+def list_sessions(worker_id: Optional[str] = None):
+    return {"sessions": memory.list_sessions(worker_id=worker_id)}
 
 
 @app.get("/api/v1/sessions/{session_id}")
@@ -383,21 +461,33 @@ def get_session_detail(session_id: str):
     session = memory.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    worker = None
+    if session.get("worker_id"):
+        worker = workers_mod.get_worker(session["worker_id"])
     return {
         "session": session,
+        "worker": worker,
         "messages": memory.get_messages(session_id),
     }
 
 
 @app.post("/api/v1/chat")
 async def chat(req: ChatRequest, request: Request, background_tasks: BackgroundTasks):
+    workers_mod.ensure_default_worker()
     if req.session_id:
         session = memory.get_session(req.session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         session_id = req.session_id
     else:
-        session = memory.create_session(persona_id=req.persona_id or "openworker")
+        worker_id = req.worker_id or workers_mod.DEFAULT_WORKER_ID
+        worker = workers_mod.get_worker(worker_id)
+        if not worker:
+            raise HTTPException(status_code=404, detail="Worker not found")
+        session = memory.create_session(
+            persona_id=req.persona_id or worker.get("persona_ref") or "openworker",
+            worker_id=worker_id,
+        )
         session_id = session["id"]
 
     trace_id = req.trace_id or new_trace_id()
@@ -410,6 +500,204 @@ async def chat(req: ChatRequest, request: Request, background_tasks: BackgroundT
     )
     base = str(request.base_url).rstrip("/")
     return envelope_chat_response(result, trace_id, base)
+
+
+# ── Workers ───────────────────────────────────────────
+
+@app.get("/api/v1/workers")
+def get_workers():
+    workers_mod.ensure_default_worker()
+    return {"workers": workers_mod.list_workers(), "limit": workers_mod.MAX_WORKERS}
+
+
+@app.post("/api/v1/workers")
+def post_worker(req: CreateWorkerRequest):
+    workers_mod.ensure_default_worker()
+    try:
+        worker = workers_mod.create_worker(
+            name=req.name,
+            avatar=req.avatar or "default",
+            role=req.role or "general",
+            persona_ref=req.persona_ref or "openworker",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "created", "worker": worker}
+
+
+@app.get("/api/v1/workers/{worker_id}")
+def get_worker_detail(worker_id: str):
+    worker = workers_mod.get_worker(worker_id)
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    return {
+        "worker": worker,
+        "chats": workers_mod.list_worker_chats(worker_id),
+        "routines": list_routines(worker_id),
+        "artifacts": artifacts_mod.list_artifacts(worker_id=worker_id, limit=20),
+    }
+
+
+@app.patch("/api/v1/workers/{worker_id}")
+def patch_worker(worker_id: str, req: UpdateWorkerRequest):
+    if not workers_mod.get_worker(worker_id):
+        raise HTTPException(status_code=404, detail="Worker not found")
+    fields = req.model_dump(exclude_none=True)
+    try:
+        worker = workers_mod.update_worker(worker_id, **fields)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"worker": worker}
+
+
+@app.post("/api/v1/workers/{worker_id}/chats")
+async def create_worker_chat(worker_id: str):
+    if not workers_mod.get_worker(worker_id):
+        raise HTTPException(status_code=404, detail="Worker not found")
+    try:
+        session = workers_mod.create_chat_for_worker(worker_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    persona = load_persona(session["persona_id"])
+    greeting = get_greeting(session["persona_id"])
+    memory.add_message(session["id"], "assistant", greeting, {"intent": "greeting"}, kind="text")
+    # Seed routine-first empty-state hint as event
+    memory.add_message(
+        session["id"],
+        "assistant",
+        "Work can start from a prompt, a Routine, or another Worker — not only from chat.",
+        {"intent": "hint"},
+        kind="event",
+    )
+    return {
+        "session": session,
+        "worker": workers_mod.get_worker(worker_id),
+        "persona": {"id": persona.get("id"), "name": persona.get("name")},
+        "greeting": greeting,
+    }
+
+
+@app.get("/api/v1/workers/{worker_id}/routines")
+def get_worker_routines(worker_id: str):
+    if not workers_mod.get_worker(worker_id):
+        raise HTTPException(status_code=404, detail="Worker not found")
+    return {"routines": list_routines(worker_id)}
+
+
+@app.post("/api/v1/workers/{worker_id}/routines")
+def post_worker_routine(worker_id: str, req: CreateRoutineRequest):
+    if not workers_mod.get_worker(worker_id):
+        raise HTTPException(status_code=404, detail="Worker not found")
+    routine = create_routine(
+        name=req.name,
+        prompt=req.prompt,
+        interval_seconds=req.interval_seconds,
+        playbook_id=req.playbook_id,
+        worker_id=worker_id,
+    )
+    # Event in latest chat
+    chats = memory.list_sessions(limit=1, worker_id=worker_id)
+    if chats:
+        memory.add_message(
+            chats[0]["id"],
+            "assistant",
+            f"Created Routine · {req.name}",
+            {"routine_id": routine["id"], "intent": "routine_created"},
+            kind="event",
+        )
+        memory.add_message(
+            chats[0]["id"],
+            "assistant",
+            req.name,
+            {
+                "widget": "routine",
+                "routine_id": routine["id"],
+                "interval_seconds": req.interval_seconds,
+                "prompt": req.prompt,
+            },
+            kind="widget",
+        )
+    return {"status": "created", "routine": routine}
+
+
+@app.post("/api/v1/routines/{routine_id}/pause")
+def post_pause_routine(routine_id: str):
+    r = pause_routine(routine_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    return {"routine": r}
+
+
+@app.post("/api/v1/routines/{routine_id}/resume")
+def post_resume_routine(routine_id: str):
+    r = resume_routine(routine_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    return {"routine": r}
+
+
+@app.delete("/api/v1/routines/{routine_id}")
+def delete_routine_endpoint(routine_id: str):
+    if not delete_routine(routine_id):
+        raise HTTPException(status_code=404, detail="Routine not found")
+    return {"status": "deleted", "id": routine_id}
+
+
+@app.get("/api/v1/artifacts")
+def get_artifacts(worker_id: Optional[str] = None):
+    return {"artifacts": artifacts_mod.list_artifacts(worker_id=worker_id)}
+
+
+@app.post("/api/v1/workers/{worker_id}/artifacts")
+def post_artifact(worker_id: str, req: CreateArtifactRequest):
+    if not workers_mod.get_worker(worker_id):
+        raise HTTPException(status_code=404, detail="Worker not found")
+    art = artifacts_mod.create_artifact(
+        worker_id=worker_id,
+        title=req.title,
+        kind=req.kind or "file",
+        session_id=req.session_id,
+        text=req.text,
+        mime_type=req.mime_type,
+        meta=req.meta,
+    )
+    return {"status": "created", "artifact": art}
+
+
+@app.get("/api/v1/artifacts/{artifact_id}")
+def get_artifact_detail(artifact_id: str):
+    art = artifacts_mod.get_artifact(artifact_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    return {"artifact": art}
+
+
+@app.get("/api/v1/groups")
+def get_groups():
+    return {"groups": groups_mod.list_groups(), "max_workers_per_group": groups_mod.MAX_WORKERS_PER_GROUP}
+
+
+@app.post("/api/v1/groups")
+def post_group(req: CreateGroupRequest):
+    try:
+        group = groups_mod.create_group_chat(
+            name=req.name,
+            worker_ids=req.worker_ids,
+            coordinator_id=req.coordinator_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "created", "group": group}
+
+
+@app.get("/api/v1/groups/{group_id}")
+def get_group_detail(group_id: str):
+    group = groups_mod.get_group(group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    session = memory.get_session(group["session_id"])
+    messages = memory.get_messages(group["session_id"]) if session else []
+    return {"group": group, "session": session, "messages": messages}
 
 
 @app.get("/api/v1/personas")
@@ -497,7 +785,13 @@ def get_schedules():
 
 @app.post("/api/v1/schedules")
 def post_schedule(req: CreateScheduleRequest):
-    sched = create_schedule(req.name, req.prompt, req.interval_seconds, req.playbook_id)
+    sched = create_schedule(
+        req.name,
+        req.prompt,
+        req.interval_seconds,
+        req.playbook_id,
+        worker_id=req.worker_id,
+    )
     return {"status": "created", "schedule": sched}
 
 

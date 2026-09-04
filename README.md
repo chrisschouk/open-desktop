@@ -1,6 +1,6 @@
 # OpenDesktop + OpenWorker
 
-OpenDesktop is the open source platform. **OpenWorker** is the conversational desktop agent that runs on top of it — Grok-style chat that actually spins up a Linux desktop and does the work.
+OpenDesktop is the open source platform. **OpenWorker** is the conversational desktop agent that runs on top of it — persistent **Workers** with their own computers, not disposable chat sessions.
 
 ## Quick start
 

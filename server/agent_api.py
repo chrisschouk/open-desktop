@@ -13,6 +13,9 @@ from .intent_router import classify_intent
 from .sandbox_factory import sandbox_manager
 from .skills import match_skills
 from .workerhub import get_workerhub_catalog
+from .workers import roster_summary, ensure_default_worker
+from .artifacts import list_artifacts
+from .routines import list_routines
 
 MANIFEST_PATH = Path(__file__).resolve().parent.parent / "agent" / "manifest.yaml"
 
@@ -59,39 +62,46 @@ def load_manifest() -> dict:
 
 
 async def agent_orient(session_limit: int = 10) -> dict:
+    ensure_default_worker()
     health = await get_health()
     machines = sandbox_manager.list_sandboxes()
     sessions = memory.list_sessions(limit=session_limit)
     working = [s for s in sessions if s.get("status") == "working"]
     hub = get_workerhub_catalog()
+    workers = roster_summary()
 
     return {
         "ok": True,
         "health": health,
+        "workers": workers,
         "machines": machines,
         "sessions": {
             "recent": sessions,
             "working_count": len(working),
             "working_ids": [s["id"] for s in working],
         },
+        "routines": list_routines()[:20],
+        "artifacts": list_artifacts(limit=10),
         "hub_summary": {
             "skills_count": len(hub.get("skills", [])),
             "playbooks_count": len(hub.get("playbooks", [])),
             "skill_ids": [s.get("id") for s in hub.get("skills", [])],
             "playbook_ids": [p.get("playbook_id") for p in hub.get("playbooks", [])],
         },
-        "next": _orient_next(health),
+        "next": _orient_next(health, workers),
     }
 
 
-def _orient_next(health: dict) -> List[str]:
+def _orient_next(health: dict, workers: list = None) -> List[str]:
     steps = []
     if not health.get("api_key_configured"):
         steps.append("configure_api_key")
     if not health.get("docker", {}).get("available"):
         steps.append("start_docker_for_desktop_tasks")
+    if not workers:
+        steps.append("ensure_default_worker")
     if not steps:
-        steps.append("create_session_or_chat")
+        steps.append("list_workers_or_chat")
     return steps
 
 
@@ -216,13 +226,19 @@ def envelope_chat_response(
     status = result.get("status", "idle")
     tier = intent_to_tier(intent)
 
-    session = memory.get_session(session_id) if session_id else None
+    session = None
+    if session_id:
+        try:
+            session = memory.get_session(session_id)
+        except Exception:
+            session = None
     machine_id = result.get("machine_id") or (session.get("machine_id") if session else None)
 
     envelope = {
         "ok": True,
         "trace_id": trace_id,
         "session_id": session_id,
+        "worker_id": result.get("worker_id") or (session.get("worker_id") if session else None),
         "intent": intent,
         "tier": tier,
         "estimated_cost": tier_cost(tier),

@@ -851,3 +851,384 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Worker shell (roster + presence + computer levels) ── */
+:root {
+    --presence-idle: #626775;
+    --presence-thinking: #E2B340;
+    --presence-working: #46B375;
+    --presence-waiting: #5E6AD2;
+    --presence-blocked: #E5484D;
+    --presence-done: #46B375;
+}
+
+.app-shell {
+    max-width: 1800px;
+}
+
+.worker-shell {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 16px;
+    min-height: calc(100vh - 120px);
+    align-items: stretch;
+}
+
+.worker-shell.preview-open {
+    grid-template-columns: 220px 1fr 360px;
+}
+
+.worker-roster {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+}
+
+.roster-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.roster-header h2 {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.roster-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.roster-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.roster-item:hover { background: var(--bg-surface-hover); }
+.roster-item.active {
+    background: var(--bg-subtle);
+    border-color: var(--border-subtle);
+}
+
+.roster-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1px;
+}
+
+.roster-name {
+    font-weight: 600;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.roster-presence {
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.roster-action {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.roster-hint {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+}
+
+.worker-avatar {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.worker-avatar .avatar-face {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: #1C1D24;
+    border: 1px solid var(--border-subtle);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.worker-avatar[data-avatar="openworker"] .avatar-face { background: #1a2233; }
+.worker-avatar[data-avatar="research"] .avatar-face { background: #1a2a22; }
+.worker-avatar[data-avatar="music"] .avatar-face { background: #2a1a22; }
+.worker-avatar[data-avatar="ops"] .avatar-face { background: #22201a; }
+
+.presence-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 12px;
+    border: 2px solid var(--presence-idle);
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.worker-avatar[data-presence="thinking"] .presence-ring {
+    border-color: var(--presence-thinking);
+    animation: presencePulse 1.4s ease-in-out infinite;
+}
+.worker-avatar[data-presence="working"] .presence-ring {
+    border-color: var(--presence-working);
+    animation: presenceSpin 2.2s linear infinite;
+}
+.worker-avatar[data-presence="waiting"] .presence-ring {
+    border-color: var(--presence-waiting);
+    animation: presencePulse 0.9s ease-in-out infinite;
+}
+.worker-avatar[data-presence="blocked"] .presence-ring {
+    border-color: var(--presence-blocked);
+}
+.worker-avatar[data-presence="done"] .presence-ring {
+    border-color: var(--presence-done);
+    animation: presenceSettle 0.6s ease-out;
+}
+
+@keyframes presencePulse {
+    0%, 100% { opacity: 0.45; transform: scale(0.96); }
+    50% { opacity: 1; transform: scale(1.02); }
+}
+@keyframes presenceSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes presenceSettle {
+    from { transform: scale(1.15); opacity: 1; }
+    to { transform: scale(1); opacity: 0.85; }
+}
+
+.worker-header-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.worker-role {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.worker-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.computer-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    padding: 4px 8px;
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+}
+
+.computer-status-chip[data-active="true"] {
+    color: var(--text-primary);
+    border-color: #3d4a9a;
+    background: rgba(94, 106, 210, 0.12);
+}
+
+.computer-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+}
+
+.computer-status-chip[data-active="true"] .computer-status-dot {
+    background: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.25);
+}
+
+.computer-preview[hidden],
+.takeover-overlay[hidden],
+.modal-backdrop[hidden] {
+    display: none !important;
+}
+
+.modal-backdrop:not([hidden]) {
+    display: flex;
+}
+
+.preview-hint {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+}
+
+.routines-bar {
+    border-top: 1px solid var(--border-dim);
+    padding: 8px 16px;
+    background: var(--bg-subtle);
+}
+
+.routines-bar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.routines-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.routine-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-dim);
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+}
+
+.routine-chip.paused { opacity: 0.55; }
+.routine-empty {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+}
+
+.chat-msg.kind-event {
+    align-self: center;
+    max-width: 95%;
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.msg-event {
+    text-align: center;
+    padding: 6px 12px;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 999px;
+}
+
+.chat-msg.kind-widget,
+.chat-msg.kind-artifact_ref,
+.chat-msg.kind-computer_status {
+    max-width: 92%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+}
+
+.msg-widget .widget-title,
+.artifact-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+
+.msg-artifact .artifact-id,
+.widget-meta {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+.msg-computer {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.takeover-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: #050506;
+    display: flex;
+    flex-direction: column;
+}
+
+.takeover-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.takeover-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.takeover-screen img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.badge-rose {
+    background: rgba(229, 72, 77, 0.15);
+    color: var(--accent-rose);
+}
+
+#container-operator.is-visible {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+}
+
+#container-operator .computer-tabs-bar {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 1100px) {
+    .worker-shell,
+    .worker-shell.preview-open {
+        grid-template-columns: 1fr;
+    }
+    .worker-roster { max-height: 180px; }
+}

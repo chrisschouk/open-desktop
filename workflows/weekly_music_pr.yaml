@@ -1,6 +1,7 @@
 # Weekly music PR discovery — Buzz-style workflow trigger for OpenDesktop scheduler
 name: Weekly Music PR Discovery
 description: Run music PR playbook every Monday morning
+worker_id: wrk_openworker
 trigger:
   on: schedule
   interval_seconds: 604800
