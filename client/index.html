@@ -2,20 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenDesktop | OpenWorker — Open Source Desktop Agent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+    <meta name="theme-color" content="#0B0C0E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>OpenWorker</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="mobile.css">
 </head>
-<body>
+<body class="mobile-ready" data-mobile-view="roster">
     <div id="setup-banner" class="setup-banner" hidden>
         <span id="setup-banner-text">No LLM API key configured — chat and automation won't work until you add one.</span>
         <button class="btn btn-secondary btn-sm" id="btn-banner-api-key">Add API Key</button>
         <button class="btn btn-secondary btn-sm setup-banner-dismiss" id="btn-dismiss-banner" aria-label="Dismiss">&times;</button>
     </div>
-    <div class="app-container app-shell">
+
+    <!-- Mobile app chrome (phone / narrow) -->
+    <div class="m-app" id="mobile-app" aria-hidden="true">
+        <header class="m-topbar" id="m-topbar">
+            <button class="m-icon-btn" id="m-btn-back" hidden aria-label="Back to Workers">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="m-topbar-brand" id="m-topbar-brand">
+                <span class="m-brand">OpenWorker</span>
+                <span class="m-brand-sub">Your Workers</span>
+            </div>
+            <div class="m-topbar-worker" id="m-topbar-worker" hidden>
+                <div class="worker-avatar m-top-avatar" id="m-header-avatar" data-presence="idle" data-avatar="openworker">
+                    <span class="avatar-face"></span>
+                    <span class="presence-ring"></span>
+                </div>
+                <div class="m-top-worker-text">
+                    <span class="m-top-name" id="m-header-name">OpenWorker</span>
+                    <span class="m-top-action" id="m-header-action">idle</span>
+                </div>
+            </div>
+            <button class="m-icon-btn" id="m-btn-computer" aria-label="Their computer" title="Computer">
+                <span class="m-computer-dot" id="m-computer-dot" data-active="false"></span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </button>
+            <button class="m-icon-btn" id="m-btn-settings" aria-label="API key">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+        </header>
+
+        <section class="m-view m-roster-view" id="m-roster-view">
+            <div class="m-roster-hero">
+                <h1 class="m-hero-brand">OpenWorker</h1>
+                <p class="m-hero-line">Coworkers that keep working — not another chat thread.</p>
+            </div>
+            <ul class="m-roster-list" id="m-roster-list"></ul>
+            <div class="m-roster-actions">
+                <button class="m-fab-secondary" id="m-btn-add-group">Group</button>
+                <button class="m-fab" id="m-btn-add-worker">New Worker</button>
+            </div>
+        </section>
+
+        <section class="m-view m-chat-view" id="m-chat-view" hidden>
+            <div class="m-messages" id="m-messages"></div>
+            <div class="m-routines-strip" id="m-routines-strip">
+                <button class="m-routine-pill" id="m-btn-routines">Routines</button>
+                <div class="m-routines-scroll" id="m-routines-scroll"></div>
+            </div>
+            <div class="m-composer">
+                <div class="m-chips" id="m-chips">
+                    <button class="m-chip" data-prompt="What can you actually do?">What can you do?</button>
+                    <button class="m-chip" data-prompt="Research 10 UK indie radio pluggers for a rock release">UK pluggers</button>
+                    <button class="m-chip" data-prompt="Create a morning briefing Routine every weekday">Morning Routine</button>
+                </div>
+                <div class="m-composer-row">
+                    <textarea id="m-chat-input" rows="1" placeholder="Message this Worker…" enterkeyhint="send"></textarea>
+                    <button class="m-send" id="m-btn-send" aria-label="Send">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Computer bottom sheet (mobile) -->
+    <div class="m-sheet-backdrop" id="m-sheet-backdrop" hidden></div>
+    <div class="m-sheet" id="m-computer-sheet" hidden role="dialog" aria-label="Their computer">
+        <div class="m-sheet-handle"></div>
+        <div class="m-sheet-header">
+            <div>
+                <h3>Their computer</h3>
+                <p class="m-sheet-sub" id="m-sheet-sub">Glance — or take over when they need you.</p>
+            </div>
+            <button class="m-icon-btn" id="m-sheet-close" aria-label="Close">×</button>
+        </div>
+        <div class="m-sheet-screen">
+            <img id="m-live-screen" alt="Worker desktop" src="">
+            <p class="m-sheet-empty" id="m-sheet-empty">Computer idle — it’ll light up when they work.</p>
+        </div>
+        <div class="m-sheet-actions">
+            <button class="btn btn-secondary" id="m-btn-sheet-refresh">Refresh</button>
+            <button class="btn btn-primary" id="m-btn-sheet-takeover">Takeover</button>
+        </div>
+    </div>
+
+    <!-- Routines sheet -->
+    <div class="m-sheet m-sheet-routines" id="m-routines-sheet" hidden role="dialog" aria-label="Routines">
+        <div class="m-sheet-handle"></div>
+        <div class="m-sheet-header">
+            <h3>Routines</h3>
+            <button class="m-icon-btn" id="m-routines-close" aria-label="Close">×</button>
+        </div>
+        <div class="m-sheet-body" id="m-routines-body"></div>
+        <button class="btn btn-primary btn-full" id="m-btn-new-routine">New Routine</button>
+    </div>
+
+    <div class="app-container app-shell desktop-only">
         <!-- Top Navigation Bar -->
         <header class="navbar">
             <div class="nav-brand">
@@ -298,5 +400,6 @@ openworker wait sess_…</pre>
 
     <script src="app.js"></script>
     <script src="chat.js"></script>
+    <script src="mobile.js"></script>
 </body>
 </html>

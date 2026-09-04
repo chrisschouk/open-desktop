@@ -54,6 +54,10 @@ function setChatWorking(working) {
         chatSendBtn.textContent = working ? "Working…" : "Send";
     }
     if (chatInput) chatInput.disabled = working;
+    const mSend = document.getElementById("m-btn-send");
+    const mInput = document.getElementById("m-chat-input");
+    if (mSend) mSend.disabled = working;
+    if (mInput) mInput.disabled = working;
 }
 
 function avatarInitial(name) {
@@ -74,33 +78,73 @@ function renderAvatarEl(el, worker) {
 }
 
 function renderRoster() {
-    if (!rosterList) return;
-    rosterList.innerHTML = "";
+    if (rosterList) {
+        rosterList.innerHTML = "";
+        workersCache.forEach((w) => {
+            const li = document.createElement("li");
+            li.className = "roster-item" + (w.id === activeWorkerId ? " active" : "");
+            li.dataset.workerId = w.id;
+
+            const av = document.createElement("div");
+            av.className = "worker-avatar roster-avatar";
+            av.innerHTML = '<span class="avatar-face"></span><span class="presence-ring"></span>';
+            renderAvatarEl(av, w);
+
+            const meta = document.createElement("div");
+            meta.className = "roster-meta";
+            meta.innerHTML = `
+                <span class="roster-name">${escapeHtml(w.name)}</span>
+                <span class="roster-presence">${escapeHtml(w.presence || "idle")}</span>
+                ${w.current_action ? `<span class="roster-action">${escapeHtml(w.current_action)}</span>` : ""}
+            `;
+
+            li.appendChild(av);
+            li.appendChild(meta);
+            li.addEventListener("click", () => selectWorker(w.id));
+            li.addEventListener("mouseenter", () => {
+                if (w.current_action) av.title = w.current_action;
+            });
+            rosterList.appendChild(li);
+        });
+    }
+    renderMobileRoster();
+    if (typeof window.MobileUI?.onWorkers === "function") {
+        window.MobileUI.onWorkers(workersCache, activeWorkerId);
+    }
+}
+
+function renderMobileRoster() {
+    const list = document.getElementById("m-roster-list");
+    if (!list) return;
+    list.innerHTML = "";
     workersCache.forEach((w) => {
         const li = document.createElement("li");
-        li.className = "roster-item" + (w.id === activeWorkerId ? " active" : "");
+        li.className = "m-roster-item";
         li.dataset.workerId = w.id;
-
+        li.dataset.presence = w.presence || "idle";
         const av = document.createElement("div");
-        av.className = "worker-avatar roster-avatar";
+        av.className = "worker-avatar";
         av.innerHTML = '<span class="avatar-face"></span><span class="presence-ring"></span>';
         renderAvatarEl(av, w);
-
         const meta = document.createElement("div");
-        meta.className = "roster-meta";
+        meta.className = "m-roster-meta";
+        const action = w.current_action
+            ? escapeHtml(w.current_action)
+            : escapeHtml(w.role || "");
         meta.innerHTML = `
-            <span class="roster-name">${escapeHtml(w.name)}</span>
-            <span class="roster-presence">${escapeHtml(w.presence || "idle")}</span>
-            ${w.current_action ? `<span class="roster-action">${escapeHtml(w.current_action)}</span>` : ""}
+            <span class="m-roster-name">${escapeHtml(w.name)}</span>
+            <span class="m-roster-role">${action}</span>
+            <span class="m-roster-presence">${escapeHtml(w.presence || "idle")}</span>
         `;
-
         li.appendChild(av);
         li.appendChild(meta);
-        li.addEventListener("click", () => selectWorker(w.id));
-        li.addEventListener("mouseenter", () => {
-            if (w.current_action) av.title = w.current_action;
+        li.addEventListener("click", async () => {
+            await selectWorker(w.id);
+            if (typeof window.MobileUI?.showChat === "function") {
+                window.MobileUI.showChat();
+            }
         });
-        rosterList.appendChild(li);
+        list.appendChild(li);
     });
 }
 
@@ -133,6 +177,14 @@ function updateWorkerHeader(worker) {
     if (computerStatusChip) {
         computerStatusChip.dataset.active = computerActive ? "true" : "false";
     }
+    const mName = document.getElementById("m-header-name");
+    const mAction = document.getElementById("m-header-action");
+    const mAv = document.getElementById("m-header-avatar");
+    const mDot = document.getElementById("m-computer-dot");
+    if (mName) mName.textContent = worker.name;
+    if (mAction) mAction.textContent = worker.current_action || worker.presence || "idle";
+    renderAvatarEl(mAv, worker);
+    if (mDot) mDot.dataset.active = computerActive ? "true" : "false";
 }
 
 async function selectWorker(workerId) {
@@ -142,7 +194,7 @@ async function selectWorker(workerId) {
     }
     activeWorkerId = workerId;
     chatSessionId = null;
-    if (chatMessages) chatMessages.innerHTML = "";
+    clearTranscripts();
     renderRoster();
     await openChatForWorker(workerId);
     await loadRoutines(workerId);
@@ -159,7 +211,7 @@ async function openChatForWorker(workerId) {
         if (chats.length) {
             chatSessionId = chats[0].id;
             const sess = await fetch(`${apiBase()}/sessions/${chatSessionId}`).then((r) => r.json());
-            if (chatMessages) chatMessages.innerHTML = "";
+            clearTranscripts();
             (sess.messages || []).forEach((m) => {
                 appendChatMessage(m.role, m.content, {
                     ...(m.metadata || {}),
@@ -175,13 +227,13 @@ async function openChatForWorker(workerId) {
             const res = await fetch(`${apiBase()}/workers/${workerId}/chats`, { method: "POST" });
             const data = await res.json();
             chatSessionId = data.session?.id;
-            if (chatMessages) chatMessages.innerHTML = "";
+            clearTranscripts();
             if (data.greeting) {
                 appendChatMessage("assistant", data.greeting, { intent: "greeting", kind: "text" });
             }
             // Reload to pick up seed event messages
             const sess = await fetch(`${apiBase()}/sessions/${chatSessionId}`).then((r) => r.json());
-            if (chatMessages) chatMessages.innerHTML = "";
+            clearTranscripts();
             (sess.messages || []).forEach((m) => {
                 appendChatMessage(m.role, m.content, {
                     ...(m.metadata || {}),
@@ -198,45 +250,52 @@ async function openChatForWorker(workerId) {
 
 async function loadRoutines(workerId) {
     const list = document.getElementById("routines-list");
-    if (!list) return;
+    const mScroll = document.getElementById("m-routines-scroll");
+    const mBody = document.getElementById("m-routines-body");
     try {
         const res = await fetch(`${apiBase()}/workers/${workerId}/routines`);
         const data = await res.json();
         const routines = data.routines || [];
-        list.innerHTML = "";
-        if (!routines.length) {
-            list.innerHTML = `<span class="routine-empty">No standing work yet — add a Routine so work can start without a prompt.</span>`;
-            return;
-        }
-        routines.forEach((r) => {
-            const el = document.createElement("div");
-            el.className = "routine-chip" + (r.paused ? " paused" : "");
-            el.innerHTML = `
-                <span class="routine-name">${escapeHtml(r.name)}</span>
-                <span class="routine-meta">every ${r.interval_seconds}s</span>
-                <button class="btn btn-secondary btn-sm routine-toggle" data-id="${r.id}" data-paused="${r.paused ? "1" : "0"}">
-                    ${r.paused ? "Resume" : "Pause"}
-                </button>
-            `;
-            list.appendChild(el);
-        });
-        list.querySelectorAll(".routine-toggle").forEach((btn) => {
-            btn.addEventListener("click", async (ev) => {
-                ev.stopPropagation();
-                const id = btn.dataset.id;
-                const paused = btn.dataset.paused === "1";
-                const path = paused ? "resume" : "pause";
-                await fetch(`${apiBase()}/routines/${id}/${path}`, { method: "POST" });
-                await loadRoutines(workerId);
+        const renderInto = (target, emptyHtml) => {
+            if (!target) return;
+            target.innerHTML = "";
+            if (!routines.length) {
+                target.innerHTML = emptyHtml;
+                return;
+            }
+            routines.forEach((r) => {
+                const el = document.createElement("div");
+                el.className = "routine-chip" + (r.paused ? " paused" : "");
+                el.innerHTML = `
+                    <span class="routine-name">${escapeHtml(r.name)}</span>
+                    <span class="routine-meta">every ${r.interval_seconds}s</span>
+                    <button class="btn btn-secondary btn-sm routine-toggle" data-id="${r.id}" data-paused="${r.paused ? "1" : "0"}">
+                        ${r.paused ? "Resume" : "Pause"}
+                    </button>
+                `;
+                target.appendChild(el);
             });
-        });
+            target.querySelectorAll(".routine-toggle").forEach((btn) => {
+                btn.addEventListener("click", async (ev) => {
+                    ev.stopPropagation();
+                    const id = btn.dataset.id;
+                    const paused = btn.dataset.paused === "1";
+                    const path = paused ? "resume" : "pause";
+                    await fetch(`${apiBase()}/routines/${id}/${path}`, { method: "POST" });
+                    await loadRoutines(workerId);
+                });
+            });
+        };
+        renderInto(list, `<span class="routine-empty">No standing work yet — add a Routine so work can start without a prompt.</span>`);
+        renderInto(mScroll, "");
+        renderInto(mBody, `<span class="routine-empty">No Routines yet. Add one so work can start without you.</span>`);
     } catch (e) {
         console.error(e);
     }
 }
 
 function appendChatMessage(role, content, meta = {}) {
-    if (!chatMessages) return;
+    if (!chatMessages && !document.getElementById("m-messages")) return;
     const kind = meta.kind || "text";
     const el = document.createElement("div");
     el.className = `chat-msg ${role} kind-${kind}${meta.status === "working" ? " working" : ""}${meta.error ? " error" : ""}`;
@@ -254,6 +313,8 @@ function appendChatMessage(role, content, meta = {}) {
     } else if (kind === "computer_status") {
         el.innerHTML = `<div class="msg-computer">${renderMarkdown(content)}</div>`;
         if (computerStatusChip) computerStatusChip.dataset.active = "true";
+        const mDot = document.getElementById("m-computer-dot");
+        if (mDot) mDot.dataset.active = "true";
     } else if (role === "assistant" && !meta.error) {
         el.innerHTML = renderMarkdown(content);
     } else {
@@ -266,8 +327,22 @@ function appendChatMessage(role, content, meta = {}) {
         m.textContent = meta.intent;
         el.appendChild(m);
     }
-    chatMessages.appendChild(el);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (chatMessages) {
+        chatMessages.appendChild(el);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    const mMessages = document.getElementById("m-messages");
+    if (mMessages) {
+        const clone = el.cloneNode(true);
+        mMessages.appendChild(clone);
+        mMessages.scrollTop = mMessages.scrollHeight;
+    }
+}
+
+function clearTranscripts() {
+    if (chatMessages) chatMessages.innerHTML = "";
+    const mMessages = document.getElementById("m-messages");
+    if (mMessages) mMessages.innerHTML = "";
 }
 
 function renderWidget(content, meta) {
@@ -283,12 +358,14 @@ function renderWidget(content, meta) {
         <pre class="widget-json">${escapeHtml(JSON.stringify(meta, null, 2))}</pre></div>`;
 }
 
-async function sendChatMessage() {
-    if (!chatInput || !chatSessionId || chatIsWorking) return;
-    const text = chatInput.value.trim();
+async function sendChatMessage(fromMobile = false) {
+    const inputEl = fromMobile ? document.getElementById("m-chat-input") : chatInput;
+    if (!inputEl || !chatSessionId || chatIsWorking) return;
+    const text = inputEl.value.trim();
     if (!text) return;
 
-    chatInput.value = "";
+    inputEl.value = "";
+    if (chatInput && inputEl !== chatInput) chatInput.value = "";
     appendChatMessage("user", text, { kind: "text" });
     setChatWorking(true);
     if (chatStatusBadge) {
@@ -342,7 +419,7 @@ function startChatPoll() {
             if (chatMessages) {
                 const rendered = chatMessages.querySelectorAll(".chat-msg").length;
                 if (messages.length > rendered) {
-                    chatMessages.innerHTML = "";
+                    clearTranscripts();
                     messages.forEach((m) => {
                         appendChatMessage(m.role, m.content, {
                             ...(m.metadata || {}),
@@ -386,6 +463,12 @@ async function refreshScreen(machineId) {
         const url = URL.createObjectURL(blob);
         if (chatLiveImg && previewOpen) chatLiveImg.src = url;
         if (takeoverImg && takeoverOpen) takeoverImg.src = url;
+        const mLive = document.getElementById("m-live-screen");
+        const sheetScreen = document.querySelector(".m-sheet-screen");
+        if (mLive) {
+            mLive.src = url;
+            if (sheetScreen) sheetScreen.classList.add("has-frame");
+        }
     } catch (_) { /* ignore */ }
 }
 
@@ -512,7 +595,7 @@ async function initChat() {
         await loadWorkers();
         if (chatSessionId) {
             const sess = await fetch(`${apiBase()}/sessions/${chatSessionId}`).then((r) => r.json());
-            if (chatMessages) chatMessages.innerHTML = "";
+            clearTranscripts();
             (sess.messages || []).forEach((m) => {
                 appendChatMessage(m.role, m.content, {
                     ...(m.metadata || {}),
@@ -565,7 +648,7 @@ async function initChat() {
         // Refresh transcript for event + widget
         if (chatSessionId) {
             const sess = await fetch(`${apiBase()}/sessions/${chatSessionId}`).then((r) => r.json());
-            if (chatMessages) chatMessages.innerHTML = "";
+            clearTranscripts();
             (sess.messages || []).forEach((m) => {
                 appendChatMessage(m.role, m.content, {
                     ...(m.metadata || {}),
@@ -581,3 +664,20 @@ if (document.readyState === "loading") {
 } else {
     initChat();
 }
+
+// Bridge for mobile shell
+window.OpenWorkerChat = {
+    selectWorker: (id) => selectWorker(id),
+    send: (fromMobile) => sendChatMessage(!!fromMobile),
+    loadWorkers: () => loadWorkers(),
+    loadRoutines: (id) => loadRoutines(id || activeWorkerId),
+    setTakeoverOpen: (v) => setTakeoverOpen(v),
+    refreshActiveScreen: async () => {
+        const w = workersCache.find((x) => x.id === activeWorkerId);
+        if (w?.preferred_machine_id) await refreshScreen(w.preferred_machine_id);
+    },
+    getActiveWorker: () => workersCache.find((x) => x.id === activeWorkerId) || null,
+    getWorkers: () => workersCache.slice(),
+    getSessionId: () => chatSessionId,
+    getActiveWorkerId: () => activeWorkerId,
+};

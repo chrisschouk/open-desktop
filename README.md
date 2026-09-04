@@ -27,6 +27,8 @@ cd client && python3 -m http.server 8888
 
 Open **http://localhost:8888** → OpenWorker Chat tab.
 
+**Phone:** open the same URL on your phone (same Wi‑Fi, or a tunnel). The UI switches to a mobile Worker roster automatically under 768px, or force it with `?mobile=1`. Add to Home Screen for an app-like install.
+
 ## For AI agents
 
 **Start:** [agent/README.md](agent/README.md) · [agent/manifest.yaml](agent/manifest.yaml) · [docs/AGENT_SYSTEM.md](docs/AGENT_SYSTEM.md)
