@@ -1,0 +1,653 @@
+/* OpenWorker mobile — Grok Bot–style: roster first, presence-led, computer as sheet */
+
+:root {
+    --m-safe-top: env(safe-area-inset-top, 0px);
+    --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --m-topbar: 56px;
+    --m-composer: auto;
+    --m-accent: #5E6AD2;
+    --m-surface: #12131a;
+    --m-ink: #f4f4f6;
+    --m-muted: #8b90a0;
+}
+
+/* Desktop keeps existing shell; mobile chrome hidden above breakpoint */
+.m-app,
+.m-sheet,
+.m-sheet-backdrop {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    html, body {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background:
+            radial-gradient(120% 80% at 10% -10%, rgba(94, 106, 210, 0.18), transparent 55%),
+            radial-gradient(90% 60% at 100% 0%, rgba(70, 179, 117, 0.08), transparent 50%),
+            var(--bg-base);
+        font-family: var(--font-sans);
+    }
+
+    .desktop-only {
+        display: none !important;
+    }
+
+    .setup-banner {
+        position: relative;
+        z-index: 40;
+    }
+
+    .m-app {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        height: 100vh;
+        padding-top: var(--m-safe-top);
+        padding-bottom: var(--m-safe-bottom);
+        position: relative;
+        z-index: 1;
+    }
+
+    .m-app[aria-hidden="false"],
+    body.mobile-active .m-app {
+        display: flex;
+    }
+
+    /* ── Top bar ── */
+    .m-topbar {
+        height: calc(var(--m-topbar) + 4px);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(16px);
+        background: rgba(11, 12, 14, 0.72);
+        flex-shrink: 0;
+    }
+
+    .m-icon-btn {
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--m-ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        flex-shrink: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .m-icon-btn:active {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .m-topbar-brand {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .m-brand {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: var(--m-ink);
+    }
+
+    .m-brand-sub {
+        font-size: 0.72rem;
+        color: var(--m-muted);
+    }
+
+    .m-topbar-worker {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .m-top-avatar {
+        width: 34px;
+        height: 34px;
+    }
+
+    .m-top-worker-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .m-top-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .m-top-action {
+        font-size: 0.7rem;
+        color: var(--m-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: lowercase;
+    }
+
+    .m-computer-dot {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: transparent;
+    }
+
+    .m-computer-dot[data-active="true"] {
+        background: var(--accent-emerald);
+        box-shadow: 0 0 0 3px rgba(70, 179, 117, 0.25);
+        animation: presencePulse 1.6s ease-in-out infinite;
+    }
+
+    body[data-mobile-view="roster"] #m-btn-back,
+    body[data-mobile-view="roster"] #m-topbar-worker,
+    body[data-mobile-view="roster"] #m-btn-computer {
+        display: none !important;
+    }
+
+    body[data-mobile-view="chat"] #m-topbar-brand,
+    body[data-mobile-view="chat"] #m-btn-settings {
+        display: none !important;
+    }
+
+    body[data-mobile-view="chat"] #m-btn-back,
+    body[data-mobile-view="chat"] #m-topbar-worker {
+        display: flex !important;
+    }
+
+    /* ── Views ── */
+    .m-view {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        animation: mFade 0.28s ease;
+    }
+
+    .m-view[hidden] {
+        display: none !important;
+    }
+
+    @keyframes mFade {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Roster home ── */
+    .m-roster-view {
+        padding: 8px 16px 100px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .m-roster-hero {
+        padding: 28px 4px 20px;
+    }
+
+    .m-hero-brand {
+        font-size: clamp(2.4rem, 11vw, 3.2rem);
+        font-weight: 700;
+        letter-spacing: -0.045em;
+        line-height: 0.95;
+        color: var(--m-ink);
+        margin-bottom: 10px;
+    }
+
+    .m-hero-line {
+        font-size: 1rem;
+        line-height: 1.45;
+        color: var(--m-muted);
+        max-width: 18em;
+    }
+
+    .m-roster-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .m-roster-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 14px;
+        border-radius: 16px;
+        background: rgba(20, 21, 24, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .m-roster-item:active {
+        transform: scale(0.985);
+        border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    .m-roster-item .worker-avatar {
+        width: 48px;
+        height: 48px;
+    }
+
+    .m-roster-item .avatar-face {
+        border-radius: 14px;
+        font-size: 1.1rem;
+    }
+
+    .m-roster-item .presence-ring {
+        border-radius: 16px;
+    }
+
+    .m-roster-meta {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .m-roster-name {
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+
+    .m-roster-role {
+        font-size: 0.78rem;
+        color: var(--m-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .m-roster-presence {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-tertiary);
+        margin-top: 4px;
+    }
+
+    .m-roster-item[data-presence="working"] .m-roster-presence,
+    .m-roster-item[data-presence="thinking"] .m-roster-presence {
+        color: var(--accent-emerald);
+    }
+
+    .m-roster-item[data-presence="waiting"] .m-roster-presence {
+        color: var(--m-accent);
+    }
+
+    .m-roster-item[data-presence="blocked"] .m-roster-presence {
+        color: var(--accent-rose);
+    }
+
+    .m-roster-actions {
+        position: fixed;
+        left: 16px;
+        right: 16px;
+        bottom: calc(16px + var(--m-safe-bottom));
+        display: flex;
+        gap: 10px;
+        z-index: 5;
+    }
+
+    .m-fab,
+    .m-fab-secondary {
+        flex: 1;
+        height: 52px;
+        border: 0;
+        border-radius: 14px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .m-fab {
+        background: var(--m-ink);
+        color: #0B0C0E;
+    }
+
+    .m-fab-secondary {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--m-ink);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        flex: 0.55;
+    }
+
+    /* ── Chat ── */
+    .m-chat-view {
+        background: transparent;
+    }
+
+    .m-messages {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .m-messages .chat-msg {
+        max-width: 92%;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        padding: 12px 14px;
+        border-radius: 18px;
+        animation: mFade 0.22s ease;
+    }
+
+    .m-messages .chat-msg.user {
+        border-bottom-right-radius: 6px;
+        background: var(--m-ink);
+        color: #0B0C0E;
+    }
+
+    .m-messages .chat-msg.assistant {
+        border-bottom-left-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .m-messages .chat-msg.kind-event {
+        align-self: center;
+        background: transparent;
+        border: none;
+        padding: 4px;
+        max-width: 100%;
+    }
+
+    .m-messages .msg-event {
+        border-radius: 999px;
+        font-size: 0.78rem;
+        padding: 8px 14px;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .m-routines-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px 8px;
+        overflow: hidden;
+    }
+
+    .m-routine-pill {
+        flex-shrink: 0;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--m-muted);
+        font-size: 0.72rem;
+        font-weight: 600;
+        font-family: inherit;
+    }
+
+    .m-routines-scroll {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        flex: 1;
+    }
+
+    .m-routines-scroll::-webkit-scrollbar { display: none; }
+
+    .m-routines-scroll .routine-chip {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .m-composer {
+        flex-shrink: 0;
+        padding: 8px 12px calc(10px + var(--m-safe-bottom));
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(11, 12, 14, 0.92);
+        backdrop-filter: blur(18px);
+    }
+
+    .m-chips {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+    }
+
+    .m-chips::-webkit-scrollbar { display: none; }
+
+    .m-chip {
+        flex-shrink: 0;
+        height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--m-muted);
+        font-size: 0.78rem;
+        font-family: inherit;
+        white-space: nowrap;
+    }
+
+    .m-composer-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .m-composer-row textarea {
+        flex: 1;
+        min-height: 44px;
+        max-height: 120px;
+        resize: none;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--m-ink);
+        padding: 12px 14px;
+        font-family: inherit;
+        font-size: 1rem;
+        line-height: 1.35;
+        outline: none;
+    }
+
+    .m-composer-row textarea:focus {
+        border-color: rgba(94, 106, 210, 0.55);
+    }
+
+    .m-send {
+        width: 48px;
+        height: 48px;
+        border: 0;
+        border-radius: 14px;
+        background: var(--m-ink);
+        color: #0B0C0E;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .m-send:disabled {
+        opacity: 0.4;
+    }
+
+    /* ── Sheets ── */
+    .m-sheet-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 80;
+        animation: mFade 0.2s ease;
+    }
+
+    .m-sheet-backdrop[hidden] {
+        display: none !important;
+    }
+
+    .m-sheet {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 90;
+        max-height: min(88dvh, 720px);
+        background: #141518;
+        border-radius: 20px 20px 0 0;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 0;
+        padding: 8px 16px calc(16px + var(--m-safe-bottom));
+        animation: mSheetUp 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
+    }
+
+    .m-sheet[hidden] {
+        display: none !important;
+    }
+
+    @keyframes mSheetUp {
+        from { transform: translateY(110%); }
+        to { transform: translateY(0); }
+    }
+
+    .m-sheet-handle {
+        width: 40px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        margin: 4px auto 12px;
+    }
+
+    .m-sheet-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .m-sheet-header h3 {
+        font-size: 1.1rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+    }
+
+    .m-sheet-sub {
+        font-size: 0.78rem;
+        color: var(--m-muted);
+        margin-top: 2px;
+    }
+
+    .m-sheet-screen {
+        position: relative;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        min-height: 200px;
+        aspect-ratio: 16 / 10;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .m-sheet-screen img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .m-sheet-empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+        color: var(--m-muted);
+        font-size: 0.85rem;
+        pointer-events: none;
+    }
+
+    .m-sheet-screen.has-frame .m-sheet-empty {
+        display: none;
+    }
+
+    .m-sheet-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .m-sheet-actions .btn {
+        flex: 1;
+        height: 48px;
+        border-radius: 12px;
+        font-size: 0.95rem;
+    }
+
+    .m-sheet-routines .m-sheet-body {
+        overflow-y: auto;
+        max-height: 40vh;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .m-sheet-routines .routine-chip {
+        justify-content: space-between;
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    /* Takeover still fullscreen from existing overlay */
+    .takeover-overlay {
+        z-index: 120;
+    }
+
+    .modal-backdrop {
+        z-index: 130;
+    }
+}
+
+/* Force mobile UI even on wider screens when ?mobile=1 */
+body.force-mobile .desktop-only {
+    display: none !important;
+}
+
+body.force-mobile .m-app {
+    display: flex !important;
+}
+
+body.force-mobile {
+    overflow: hidden;
+}

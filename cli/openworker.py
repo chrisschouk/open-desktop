@@ -51,10 +51,54 @@ def cmd_plan(args):
     out(r.json(), 0 if r.ok else 1)
 
 
+def cmd_session_create(args):
+    payload = {"persona_id": args.persona or "openworker"}
+    if getattr(args, "worker", None):
+        payload["worker_id"] = args.worker
+    r = requests.post(
+        _url(args.api_url, "/api/v1/sessions"),
+        json=payload,
+        headers=headers(),
+        timeout=30,
+    )
+    out(r.json(), 0 if r.ok else 1)
+
+
+def cmd_workers_list(args):
+    r = requests.get(_url(args.api_url, "/api/v1/workers"), headers=headers(), timeout=30)
+    out(r.json(), 0 if r.ok else 1)
+
+
+def cmd_workers_get(args):
+    r = requests.get(
+        _url(args.api_url, f"/api/v1/workers/{args.worker_id}"),
+        headers=headers(),
+        timeout=30,
+    )
+    out(r.json(), 0 if r.ok else 1)
+
+
+def cmd_workers_create(args):
+    r = requests.post(
+        _url(args.api_url, "/api/v1/workers"),
+        json={
+            "name": args.name,
+            "avatar": args.avatar or "default",
+            "role": args.role or "general",
+            "persona_ref": args.persona or "openworker",
+        },
+        headers=headers(),
+        timeout=30,
+    )
+    out(r.json(), 0 if r.ok else 1)
+
+
 def cmd_chat(args):
     payload = {"message": args.message}
     if args.session:
         payload["session_id"] = args.session
+    if getattr(args, "worker", None):
+        payload["worker_id"] = args.worker
     if args.force_intent:
         payload["force_intent"] = args.force_intent
     r = requests.post(_url(args.api_url, "/api/v1/chat"), json=payload, headers=headers(), timeout=120)
@@ -79,16 +123,6 @@ def cmd_wait(args):
             out({"session_id": args.session_id, "status": status, "session": last}, code)
         time.sleep(args.interval)
     out({"error": "timeout", "session_id": args.session_id, "last": last}, 1)
-
-
-def cmd_session_create(args):
-    r = requests.post(
-        _url(args.api_url, "/api/v1/sessions"),
-        json={"persona_id": args.persona or "openworker"},
-        headers=headers(),
-        timeout=30,
-    )
-    out(r.json(), 0 if r.ok else 1)
 
 
 def cmd_playbook_run(args):
@@ -138,6 +172,7 @@ def main():
     chat = sub.add_parser("chat", help="Send a message to OpenWorker (enveloped JSON)")
     chat.add_argument("message", help="User message")
     chat.add_argument("--session", help="Existing session ID")
+    chat.add_argument("--worker", help="Worker ID (creates chat under worker if no session)")
     chat.add_argument("--force-intent", dest="force_intent", help="Override intent")
     chat.set_defaults(func=cmd_chat)
 
@@ -150,10 +185,25 @@ def main():
     manifest = sub.add_parser("manifest", help="Load agent manifest JSON")
     manifest.set_defaults(func=cmd_manifest)
 
+    workers = sub.add_parser("workers", help="Worker roster")
+    workers_sub = workers.add_subparsers(dest="workers_cmd", required=True)
+    wl = workers_sub.add_parser("list", help="List Workers")
+    wl.set_defaults(func=cmd_workers_list)
+    wg = workers_sub.add_parser("get", help="Get Worker detail")
+    wg.add_argument("worker_id")
+    wg.set_defaults(func=cmd_workers_get)
+    wc = workers_sub.add_parser("create", help="Create a Worker")
+    wc.add_argument("name")
+    wc.add_argument("--avatar", default="default")
+    wc.add_argument("--role", default="general")
+    wc.add_argument("--persona", default="openworker")
+    wc.set_defaults(func=cmd_workers_create)
+
     sess = sub.add_parser("session", help="Session management")
     sess_sub = sess.add_subparsers(dest="session_cmd", required=True)
     create = sess_sub.add_parser("create", help="Create a new session")
     create.add_argument("--persona", default="openworker")
+    create.add_argument("--worker", help="Worker ID")
     create.set_defaults(func=cmd_session_create)
 
     pb = sub.add_parser("playbook", help="Run playbooks")

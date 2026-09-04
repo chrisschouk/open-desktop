@@ -1,6 +1,6 @@
 # OpenDesktop + OpenWorker
 
-OpenDesktop is the open source platform. **OpenWorker** is the conversational desktop agent that runs on top of it — Grok-style chat that actually spins up a Linux desktop and does the work.
+OpenDesktop is the open source platform. **OpenWorker** is the conversational desktop agent that runs on top of it — persistent **Workers** with their own computers, not disposable chat sessions.
 
 ## Quick start
 
@@ -26,6 +26,8 @@ cd client && python3 -m http.server 8888
 ```
 
 Open **http://localhost:8888** → OpenWorker Chat tab.
+
+**Phone:** open the same URL on your phone (same Wi‑Fi, or a tunnel). The UI switches to a mobile Worker roster automatically under 768px, or force it with `?mobile=1`. Add to Home Screen for an app-like install.
 
 ## For AI agents
 

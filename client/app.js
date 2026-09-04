@@ -2,6 +2,8 @@
 
 const API_BASE = "http://localhost:8000/api/v1";
 const WS_BASE = "ws://localhost:8000/ws";
+window.API_BASE = API_BASE;
+window.WS_BASE = WS_BASE;
 
 let activeComputerId = null;
 let machines = [];
@@ -339,7 +341,16 @@ function setupEventListeners() {
 }
 
 function setMainTab(tab) {
-    const show = (el, visible) => { if (el) el.style.display = visible ? "grid" : "none"; };
+    const show = (el, visible) => {
+        if (!el) return;
+        if (visible) {
+            el.style.display = el.id === "container-chat" || el.id === "container-operator" ? "grid" : "block";
+            el.classList.add("is-visible");
+        } else {
+            el.style.display = "none";
+            el.classList.remove("is-visible");
+        }
+    };
     show(containerChat, tab === "chat");
     show(containerOperator, tab === "operator");
     show(containerDeveloper, tab === "developer");

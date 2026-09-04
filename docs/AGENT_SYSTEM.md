@@ -35,12 +35,15 @@ ORIENT → PLAN → ACT → OBSERVE → VERIFY → REPORT
 
 ## 3. Identity model (what persists vs what is disposable)
 
-Borrowed from Buzz's "relay vs body" pattern — adapted for desktop agents:
+Borrowed from Buzz's "relay vs body" pattern — adapted for desktop agents.
+Product language: a **Worker** is the persistent agent; a **Chat** (`session_id`) is how you talk to one.
+See [DESIGN_PRIMITIVES.md](DESIGN_PRIMITIVES.md).
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  PERSISTENT (identity + memory)                         │
-│  session_id · channel_key · persona_id · audit chain    │
+│  worker_id · session_id · channel_key · persona_id      │
+│  routines · artifacts · audit chain                     │
 └─────────────────────────────────────────────────────────┘
                           │
                           ▼
@@ -52,14 +55,16 @@ Borrowed from Buzz's "relay vs body" pattern — adapted for desktop agents:
 
 | Identifier | Lifetime | Meaning |
 |------------|----------|---------|
-| `session_id` | Until deleted | Conversation thread, status machine, message history |
+| `worker_id` | Until deleted | Persistent agent — identity, memory, routines, presence, sandbox affinity |
+| `session_id` | Until deleted | Chat thread owned by a Worker; status machine; message history |
 | `channel_key` | Maps 1:1 to session | `discord:guild:channel`, `telegram:chat:user`, `web:…` |
-| `machine_id` | Container lifecycle | Sandbox body — replaceable, not sacred |
-| `playbook_id` | Static catalog | Named procedure template |
-| `skill_id` | Static catalog | Trigger + instructions, may bind a playbook |
-| `trace_id` | Per request (planned) | Correlate chat → actions → audit |
+| `machine_id` | Container lifecycle | Sandbox body — replaceable, not sacred; affinity lives on the Worker |
+| `playbook_id` | Static catalog | Named procedure template (account-level) |
+| `skill_id` | Static catalog | Trigger + instructions, may bind a playbook (account-level) |
+| `artifact_id` | Until deleted | Durable Worker output (file, report, screenshot ref) |
+| `trace_id` | Per request | Correlate chat → actions → audit |
 
-**Agent rule:** Never anchor memory on `machine_id`. Always anchor on `session_id` or `channel_key`.
+**Agent rule:** Never anchor memory on `machine_id`. Prefer `worker_id` for long-lived context; use `session_id` or `channel_key` for a single chat thread.
 
 ---
 

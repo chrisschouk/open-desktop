@@ -74,10 +74,13 @@ def _register_builtin_tools():
         message: str,
         session_id: str = None,
         persona_id: str = "openworker",
+        worker_id: str = None,
         force_intent: str = None,
     ) -> dict:
         """Buzz-friendly chat entry — routes through OpenWorker intent layer."""
         from . import memory
+        from .workers import DEFAULT_WORKER_ID, ensure_default_worker
+        ensure_default_worker()
         trace_id = new_trace_id()
         if session_id:
             session = memory.get_session(session_id)
@@ -85,7 +88,10 @@ def _register_builtin_tools():
                 raise ValueError(f"Unknown session_id: {session_id}")
             sid = session_id
         else:
-            session = memory.create_session(persona_id=persona_id)
+            session = memory.create_session(
+                persona_id=persona_id,
+                worker_id=worker_id or DEFAULT_WORKER_ID,
+            )
             sid = session["id"]
         result = await chat_service.handle_message(
             sid, message, None, trace_id=trace_id, force_intent=force_intent,
@@ -93,9 +99,14 @@ def _register_builtin_tools():
         base = os.getenv("OPENDESKTOP_API_URL", "http://localhost:8000").rstrip("/")
         return envelope_chat_response(result, trace_id, base)
 
+    async def list_workers_tool() -> dict:
+        from .workers import list_workers, ensure_default_worker
+        ensure_default_worker()
+        return {"workers": list_workers()}
+
     register_tool(
         "openworker_orient",
-        "One-call system bootstrap — health, machines, sessions, hub summary.",
+        "One-call system bootstrap — health, workers, machines, sessions, hub summary.",
         {"type": "object", "properties": {}},
         openworker_orient,
     )
@@ -178,12 +189,19 @@ def _register_builtin_tools():
             "properties": {
                 "message": {"type": "string", "description": "User message for OpenWorker"},
                 "session_id": {"type": "string", "description": "Optional existing session ID"},
+                "worker_id": {"type": "string", "description": "Worker ID (default: wrk_openworker)"},
                 "persona_id": {"type": "string", "description": "Persona ID (default: openworker)"},
                 "force_intent": {"type": "string", "description": "Override router: chat|browser|research|automate|playbook"},
             },
             "required": ["message"],
         },
         openworker_chat,
+    )
+    register_tool(
+        "list_workers",
+        "List persistent OpenWorkers (roster) with presence and affinity.",
+        {"type": "object", "properties": {}},
+        list_workers_tool,
     )
 
 
