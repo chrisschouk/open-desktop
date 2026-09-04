@@ -283,7 +283,10 @@ async def startup_event():
     init_audit()
     init_schedules()
     if hasattr(sandbox_manager, "reconcile_from_docker"):
-        await sandbox_manager.reconcile_from_docker()
+        try:
+            await sandbox_manager.reconcile_from_docker()
+        except Exception as e:
+            print(f"[Startup] Docker reconcile skipped: {e}")
     imported = load_workflow_files()
     if imported:
         print(f"[Startup] Loaded {len(imported)} workflow(s) from workflows/")

@@ -894,6 +894,11 @@ body {
     justify-content: space-between;
 }
 
+.roster-header-actions {
+    display: flex;
+    gap: 4px;
+}
+
 .roster-header h2 {
     font-size: 0.85rem;
     font-weight: 600;

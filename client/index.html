@@ -48,7 +48,10 @@
             <aside class="worker-roster" id="worker-roster" aria-label="Worker roster">
                 <div class="roster-header">
                     <h2>Workers</h2>
-                    <button class="btn btn-secondary btn-sm" id="btn-add-worker" title="New Worker">+</button>
+                    <div class="roster-header-actions">
+                        <button class="btn btn-secondary btn-sm" id="btn-add-group" title="New group chat">Grp</button>
+                        <button class="btn btn-secondary btn-sm" id="btn-add-worker" title="New Worker">+</button>
+                    </div>
                 </div>
                 <ul class="roster-list" id="roster-list"></ul>
                 <p class="roster-hint">Persistent agents — not chat history. Hover an avatar for what they’re doing.</p>
@@ -293,7 +296,7 @@ openworker wait sess_…</pre>
         </div>
     </div>
 
-    <script src="chat.js"></script>
     <script src="app.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>

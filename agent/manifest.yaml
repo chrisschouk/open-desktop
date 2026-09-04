@@ -169,7 +169,7 @@ tools:
   items:
     - name: openworker_orient
       tier: none
-      description: One-call bootstrap — health, machines, sessions, hub
+      description: One-call bootstrap — health, workers, machines, sessions, hub
     - name: openworker_plan
       tier: none
       description: Dry-run intent/tier without execution
@@ -177,7 +177,10 @@ tools:
       tier: auto
       description: Full intent router — preferred entry
       required: [message]
-      optional: [session_id, persona_id]
+      optional: [session_id, worker_id, persona_id, force_intent]
+    - name: list_workers
+      tier: none
+      description: Persistent Worker roster with presence
     - name: list_sandboxes
       tier: none
       description: Fleet status
@@ -195,11 +198,18 @@ cli:
   binary: openworker
   commands:
     - chat
+    - workers list
+    - workers get
+    - workers create
     - session create
     - sandboxes list
-    - skills list
+    - orient
+    - plan
+    - wait
     - hub
+    - manifest
     - playbook run
+    - skills list
   planned: []
 
 playbooks:

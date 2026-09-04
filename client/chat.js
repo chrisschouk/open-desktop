@@ -487,6 +487,41 @@ async function initChat() {
     document.getElementById("btn-add-worker")?.addEventListener("click", () => {
         if (modalWorker) modalWorker.hidden = false;
     });
+    document.getElementById("btn-add-group")?.addEventListener("click", async () => {
+        const ids = workersCache.map((w) => w.id).slice(0, 6);
+        if (ids.length < 2) {
+            alert("Create at least two Workers before opening a group chat.");
+            return;
+        }
+        const name = prompt("Group name", "Project sync");
+        if (!name) return;
+        const coordinator = workersCache.find((w) => w.id === "wrk_coordinator")?.id || ids[0];
+        const res = await fetch(`${apiBase()}/groups`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, worker_ids: ids.slice(0, 3), coordinator_id: coordinator }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.detail || "Could not create group");
+            return;
+        }
+        // Open the group's session under the coordinator
+        activeWorkerId = coordinator;
+        chatSessionId = data.group?.session_id;
+        await loadWorkers();
+        if (chatSessionId) {
+            const sess = await fetch(`${apiBase()}/sessions/${chatSessionId}`).then((r) => r.json());
+            if (chatMessages) chatMessages.innerHTML = "";
+            (sess.messages || []).forEach((m) => {
+                appendChatMessage(m.role, m.content, {
+                    ...(m.metadata || {}),
+                    kind: m.kind || "text",
+                });
+            });
+        }
+        await loadRoutines(coordinator);
+    });
     document.getElementById("btn-close-worker-modal")?.addEventListener("click", () => {
         if (modalWorker) modalWorker.hidden = true;
     });
