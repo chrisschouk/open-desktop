@@ -64,7 +64,15 @@
                 ? w.current_action
                 : "Glance — or take over when they need you.";
         }
-        await window.OpenWorkerChat?.refreshActiveScreen?.();
+        if (w?.preferred_machine_id) {
+            await window.OpenWorkerChat?.refreshActiveScreen?.();
+        } else {
+            window.OpenWorkerChat?.clearComputerFrame?.(
+                "No live desktop yet — this Worker hasn’t started a sandbox computer."
+            );
+            // Still refresh empty-state copy from health (Docker missing, etc.)
+            await window.OpenWorkerChat?.refreshActiveScreen?.();
+        }
     }
 
     function bind() {
@@ -74,9 +82,24 @@
         document.getElementById("m-sheet-backdrop")?.addEventListener("click", closeSheets);
         document.getElementById("m-routines-close")?.addEventListener("click", closeSheets);
 
-        document.getElementById("m-btn-settings")?.addEventListener("click", () => {
+        const openApiModal = () => {
+            if (typeof window.openApiModal === "function") {
+                window.openApiModal();
+                return;
+            }
             const modal = document.getElementById("modal-api");
-            if (modal) modal.classList.add("open");
+            if (!modal) return;
+            modal.hidden = false;
+            modal.classList.add("open");
+            const input = document.getElementById("input-api-key");
+            if (input) setTimeout(() => input.focus(), 50);
+        };
+        document.getElementById("m-btn-settings")?.addEventListener("click", openApiModal);
+        // Banner lives outside the mobile shell — bind here too so it works even if app.js raced.
+        document.getElementById("btn-banner-api-key")?.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openApiModal();
         });
 
         document.getElementById("m-btn-add-worker")?.addEventListener("click", () => {
