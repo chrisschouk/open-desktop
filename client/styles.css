@@ -635,7 +635,7 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 5000;
 }
 
 .modal-backdrop.open { display: flex; }
@@ -768,6 +768,8 @@ body {
 }
 
 .setup-banner {
+    position: relative;
+    z-index: 5000;
     display: flex;
     align-items: center;
     gap: 12px;

@@ -74,9 +74,20 @@
         document.getElementById("m-sheet-backdrop")?.addEventListener("click", closeSheets);
         document.getElementById("m-routines-close")?.addEventListener("click", closeSheets);
 
-        document.getElementById("m-btn-settings")?.addEventListener("click", () => {
+        const openApiModal = () => {
             const modal = document.getElementById("modal-api");
-            if (modal) modal.classList.add("open");
+            if (!modal) return;
+            modal.classList.add("open");
+            modal.hidden = false;
+            const input = document.getElementById("input-api-key");
+            if (input) setTimeout(() => input.focus(), 50);
+        };
+        document.getElementById("m-btn-settings")?.addEventListener("click", openApiModal);
+        // Banner lives outside the mobile shell — bind here too so it works even if app.js raced.
+        document.getElementById("btn-banner-api-key")?.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openApiModal();
         });
 
         document.getElementById("m-btn-add-worker")?.addEventListener("click", () => {

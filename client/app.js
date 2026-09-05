@@ -255,6 +255,7 @@ async function fetchEngineStatus() {
 function updateSetupBanner(health) {
     const banner = document.getElementById("setup-banner");
     const text = document.getElementById("setup-banner-text");
+    const bannerBtn = document.getElementById("btn-banner-api-key");
     if (!banner || !text) return;
     if (sessionStorage.getItem("opendesktop-banner-dismissed") === "1") {
         banner.hidden = true;
@@ -262,11 +263,13 @@ function updateSetupBanner(health) {
     }
     if (!health.api_key_configured) {
         text.textContent = "No API key — paste your OpenRouter sk-or- key (DeepSeek V4 Flash only).";
+        if (bannerBtn) bannerBtn.textContent = "Add API Key";
         banner.hidden = false;
         return;
     }
     if (!health.docker?.available) {
-        text.textContent = "Docker is not available — sandbox automation requires Docker.";
+        text.textContent = "Docker is not available — sandbox automation requires Docker. You can still chat after setting an API key.";
+        if (bannerBtn) bannerBtn.textContent = "API Key";
         banner.hidden = false;
         return;
     }
