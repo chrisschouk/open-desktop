@@ -290,12 +290,42 @@ function setupEventListeners() {
     if (btnTabOperator) btnTabOperator.addEventListener("click", () => setMainTab("operator"));
     if (btnTabDeveloper) btnTabDeveloper.addEventListener("click", () => setMainTab("developer"));
 
-    if (btnApiKeys) btnApiKeys.addEventListener("click", () => modalApi.classList.add("open"));
-    if (btnCloseModal) btnCloseModal.addEventListener("click", () => modalApi.classList.remove("open"));
+    function openApiModal() {
+        if (!modalApi) return;
+        modalApi.hidden = false;
+        modalApi.classList.add("open");
+        const input = document.getElementById("input-api-key");
+        if (input) setTimeout(() => input.focus(), 50);
+    }
+
+    function closeApiModal() {
+        if (!modalApi) return;
+        modalApi.classList.remove("open");
+        modalApi.hidden = true;
+    }
+
+    window.openApiModal = openApiModal;
+    window.closeApiModal = closeApiModal;
+
+    if (btnApiKeys) btnApiKeys.addEventListener("click", openApiModal);
+    if (btnCloseModal) btnCloseModal.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeApiModal();
+    });
+
+    if (modalApi) {
+        modalApi.addEventListener("click", (e) => {
+            if (e.target === modalApi) closeApiModal();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modalApi.classList.contains("open")) closeApiModal();
+        });
+    }
 
     const btnBannerKey = document.getElementById("btn-banner-api-key");
     if (btnBannerKey && modalApi) {
-        btnBannerKey.addEventListener("click", () => modalApi.classList.add("open"));
+        btnBannerKey.addEventListener("click", openApiModal);
     }
     const btnDismissBanner = document.getElementById("btn-dismiss-banner");
     if (btnDismissBanner) {
@@ -329,7 +359,7 @@ function setupEventListeners() {
             if (!res.ok) {
                 throw new Error((data && (data.detail || data.message)) || `HTTP ${res.status}`);
             }
-            if (data && data.status === "success") {
+            if (data && (data.status === "success" || data.status === "ok" || res.ok)) {
                 if (statusEl) {
                     statusEl.style.display = "block";
                     setTimeout(() => { statusEl.style.display = "none"; }, 2000);
@@ -351,7 +381,7 @@ function setupEventListeners() {
         btnSaveKey.addEventListener("click", async (e) => {
             e.preventDefault();
             const ok = await saveKey(inputKey.value.trim(), keyStatus);
-            if (ok && modalApi) setTimeout(() => modalApi.classList.remove("open"), 1000);
+            if (ok) setTimeout(() => closeApiModal(), 600);
         });
     }
 

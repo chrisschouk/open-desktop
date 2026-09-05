@@ -75,10 +75,14 @@
         document.getElementById("m-routines-close")?.addEventListener("click", closeSheets);
 
         const openApiModal = () => {
+            if (typeof window.openApiModal === "function") {
+                window.openApiModal();
+                return;
+            }
             const modal = document.getElementById("modal-api");
             if (!modal) return;
-            modal.classList.add("open");
             modal.hidden = false;
+            modal.classList.add("open");
             const input = document.getElementById("input-api-key");
             if (input) setTimeout(() => input.focus(), 50);
         };

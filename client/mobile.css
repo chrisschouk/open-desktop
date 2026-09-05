@@ -751,5 +751,5 @@ body.mobile-active .setup-banner button {
 
 body.mobile-active .modal-backdrop,
 body.mobile-active .modal-backdrop.open {
-    z-index: 500;
+    z-index: 5000;
 }

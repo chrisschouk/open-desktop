@@ -1088,7 +1088,9 @@ body {
     display: none !important;
 }
 
-.modal-backdrop:not([hidden]) {
+/* Only .open shows API/settings modals — do not use :not([hidden]) alone
+   or the dialog stays stuck visible after save/close. */
+.modal-backdrop.open:not([hidden]) {
     display: flex;
 }
 
