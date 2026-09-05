@@ -1,9 +1,18 @@
 // OpenDesktop Client - Digital Employee OS & Playbook Engine
 
-const API_BASE = "http://localhost:8000/api/v1";
-const WS_BASE = "ws://localhost:8000/ws";
-window.API_BASE = API_BASE;
-window.WS_BASE = WS_BASE;
+// Same-origin when served via demo proxy / public tunnel; localhost when developing locally.
+(() => {
+    const host = window.location.hostname;
+    const proto = window.location.protocol === "https:" ? "https" : "http";
+    const wsProto = window.location.protocol === "https:" ? "wss" : "ws";
+    const local = host === "localhost" || host === "127.0.0.1";
+    const API_BASE = local ? "http://localhost:8000/api/v1" : `${proto}://${window.location.host}/api/v1`;
+    const WS_BASE = local ? "ws://localhost:8000/ws" : `${wsProto}://${window.location.host}/ws`;
+    window.API_BASE = API_BASE;
+    window.WS_BASE = WS_BASE;
+})();
+const API_BASE = window.API_BASE;
+const WS_BASE = window.WS_BASE;
 
 let activeComputerId = null;
 let machines = [];
@@ -252,7 +261,7 @@ function updateSetupBanner(health) {
         return;
     }
     if (!health.api_key_configured) {
-        text.textContent = "No API key configured — add OPENROUTER_API_KEY to .env or paste your sk-or- key in API Key Settings.";
+        text.textContent = "No API key — paste your OpenRouter sk-or- key (DeepSeek V4 Flash only).";
         banner.hidden = false;
         return;
     }
