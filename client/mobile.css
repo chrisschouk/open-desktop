@@ -657,6 +657,11 @@ body.mobile-active {
         display: block;
     }
 
+    & .m-sheet-screen img[hidden] {
+
+        display: none !important;
+    }
+
     & .m-sheet-empty {
 
         position: absolute;
@@ -668,12 +673,18 @@ body.mobile-active {
         padding: 24px;
         color: var(--m-muted);
         font-size: 0.85rem;
+        line-height: 1.45;
         pointer-events: none;
     }
 
     & .m-sheet-screen.has-frame .m-sheet-empty {
 
         display: none;
+    }
+
+    & .m-sheet-screen.has-frame img {
+
+        display: block;
     }
 
     & .m-sheet-actions {

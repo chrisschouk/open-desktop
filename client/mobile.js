@@ -64,7 +64,15 @@
                 ? w.current_action
                 : "Glance — or take over when they need you.";
         }
-        await window.OpenWorkerChat?.refreshActiveScreen?.();
+        if (w?.preferred_machine_id) {
+            await window.OpenWorkerChat?.refreshActiveScreen?.();
+        } else {
+            window.OpenWorkerChat?.clearComputerFrame?.(
+                "No live desktop yet — this Worker hasn’t started a sandbox computer."
+            );
+            // Still refresh empty-state copy from health (Docker missing, etc.)
+            await window.OpenWorkerChat?.refreshActiveScreen?.();
+        }
     }
 
     function bind() {
