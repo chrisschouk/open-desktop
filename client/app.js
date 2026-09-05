@@ -312,8 +312,21 @@ function setupEventListeners() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ api_key: keyVal })
             });
-            const data = await res.json();
-            if (data.status === "success") {
+            const raw = await res.text();
+            let data = null;
+            try {
+                data = raw ? JSON.parse(raw) : null;
+            } catch {
+                throw new Error(
+                    res.ok
+                        ? "Server returned a non-JSON page (stale tunnel URL?). Open the latest demo link and try again."
+                        : `Key save failed (HTTP ${res.status}). Open the latest demo link — old tunnel URLs expire.`
+                );
+            }
+            if (!res.ok) {
+                throw new Error((data && (data.detail || data.message)) || `HTTP ${res.status}`);
+            }
+            if (data && data.status === "success") {
                 if (statusEl) {
                     statusEl.style.display = "block";
                     setTimeout(() => { statusEl.style.display = "none"; }, 2000);
@@ -321,6 +334,7 @@ function setupEventListeners() {
                 fetchEngineStatus();
                 return true;
             }
+            throw new Error((data && data.message) || "Unexpected response from server");
         } catch (e) {
             alert("Failed to save key: " + e.message);
         }
