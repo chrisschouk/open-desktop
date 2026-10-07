@@ -1,0 +1,36 @@
+# Lightweight OpenDesktop sandbox for demos (Xvfb + XFCE + noVNC + agent daemon)
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:1
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    xfce4 \
+    xfce4-terminal \
+    dbus-x11 \
+    x11vnc \
+    novnc \
+    websockify \
+    python3 \
+    python3-pip \
+    python3-pil \
+    scrot \
+    xdotool \
+    curl \
+    ca-certificates \
+    fonts-dejavu \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY agent_daemon.py /app/agent_daemon.py
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 6080 8000
+
+CMD ["/app/entrypoint.sh"]

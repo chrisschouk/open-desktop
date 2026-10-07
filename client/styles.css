@@ -635,7 +635,7 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 5000;
 }
 
 .modal-backdrop.open { display: flex; }
@@ -768,6 +768,8 @@ body {
 }
 
 .setup-banner {
+    position: relative;
+    z-index: 5000;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1086,7 +1088,9 @@ body {
     display: none !important;
 }
 
-.modal-backdrop:not([hidden]) {
+/* Only .open shows API/settings modals — do not use :not([hidden]) alone
+   or the dialog stays stuck visible after save/close. */
+.modal-backdrop.open:not([hidden]) {
     display: flex;
 }
 

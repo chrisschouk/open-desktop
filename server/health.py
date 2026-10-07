@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 from .config import (
     CHAT_API_KEY,
+    OPENROUTER_API_URL,
     OPENROUTER_API_KEY,
     SANDBOX_MODE,
     SANDBOX_IMAGE,
@@ -35,6 +36,8 @@ async def get_health() -> Dict[str, Any]:
     chat_key = os.getenv("CHAT_API_KEY") or os.getenv("OPENROUTER_API_KEY") or CHAT_API_KEY
     vision_key = os.getenv("VISION_API_KEY") or os.getenv("OPENROUTER_API_KEY") or VISION_API_KEY
     api_key_configured = bool(chat_key or vision_key)
+    chat_model = os.getenv("CHAT_MODEL") or "deepseek/deepseek-v4-flash"
+    vision_model = os.getenv("VISION_MODEL") or chat_model
 
     docker = await _docker_available()
     machines = sandbox_manager.list_sandboxes()
@@ -47,6 +50,9 @@ async def get_health() -> Dict[str, Any]:
         "sandbox_image": SANDBOX_IMAGE,
         "api_key_configured": api_key_configured,
         "llm_provider": llm_provider_label(),
+        "chat_model": chat_model,
+        "vision_model": vision_model,
+        "chat_api_url": os.getenv("CHAT_API_URL") or OPENROUTER_API_URL,
         "chat_api_key_configured": bool(chat_key),
         "vision_api_key_configured": bool(vision_key),
         "api_token_required": bool(API_GATEWAY_TOKEN),

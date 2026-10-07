@@ -49,7 +49,7 @@ _using_openrouter = bool(OPENROUTER_API_KEY) or (
     CHAT_API_KEY.startswith("sk-or-") if CHAT_API_KEY else False
 )
 _default_url = OPENROUTER_API_URL if _using_openrouter else OPENAI_API_URL
-_default_model = "openai/gpt-4o-mini" if _using_openrouter else "gpt-4o-mini"
+_default_model = "deepseek/deepseek-v4-flash" if _using_openrouter else "gpt-4o-mini"
 
 CHAT_API_URL = os.getenv("CHAT_API_URL", _default_url)
 CHAT_MODEL = os.getenv("CHAT_MODEL", _default_model)
@@ -73,10 +73,11 @@ def apply_llm_api_key(key: str) -> None:
     os.environ["VISION_API_KEY"] = key
     if key.startswith("sk-or-"):
         os.environ["OPENROUTER_API_KEY"] = key
-        os.environ.setdefault("CHAT_API_URL", OPENROUTER_API_URL)
-        os.environ.setdefault("VISION_API_URL", OPENROUTER_API_URL)
-        os.environ.setdefault("CHAT_MODEL", "openai/gpt-4o-mini")
-        os.environ.setdefault("VISION_MODEL", "openai/gpt-4o-mini")
+        os.environ["CHAT_API_URL"] = OPENROUTER_API_URL
+        os.environ["VISION_API_URL"] = OPENROUTER_API_URL
+        # OpenDesktop demo default: DeepSeek V4 Flash only via OpenRouter
+        os.environ["CHAT_MODEL"] = "deepseek/deepseek-v4-flash"
+        os.environ["VISION_MODEL"] = "deepseek/deepseek-v4-flash"
 
 
 def llm_provider_label() -> str:

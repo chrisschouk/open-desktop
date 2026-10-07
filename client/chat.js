@@ -456,20 +456,65 @@ function stopChatPoll() {
 }
 
 async function refreshScreen(machineId) {
+    const mLive = document.getElementById("m-live-screen");
+    const sheetScreen = document.querySelector(".m-sheet-screen");
+    const empty = document.getElementById("m-sheet-empty");
     try {
+        if (!machineId) {
+            clearComputerFrame();
+            return;
+        }
         const res = await fetch(`${apiBase()}/machines/${machineId}/screenshot`);
-        if (!res.ok) return;
+        if (!res.ok) {
+            clearComputerFrame(await computerUnavailableReason());
+            return;
+        }
         const blob = await res.blob();
+        if (!blob || blob.size < 32) {
+            clearComputerFrame(await computerUnavailableReason());
+            return;
+        }
         const url = URL.createObjectURL(blob);
         if (chatLiveImg && previewOpen) chatLiveImg.src = url;
         if (takeoverImg && takeoverOpen) takeoverImg.src = url;
-        const mLive = document.getElementById("m-live-screen");
-        const sheetScreen = document.querySelector(".m-sheet-screen");
         if (mLive) {
+            mLive.hidden = false;
             mLive.src = url;
             if (sheetScreen) sheetScreen.classList.add("has-frame");
+            if (empty) empty.hidden = true;
+        }
+    } catch (_) {
+        clearComputerFrame(await computerUnavailableReason());
+    }
+}
+
+async function computerUnavailableReason() {
+    try {
+        const res = await fetch(`${apiBase()}/health`);
+        const data = await res.json();
+        if (!data.docker?.available) {
+            return "No live desktop here — Docker isn’t available on this demo host, so Workers can’t open a sandbox computer.";
+        }
+        if (!(data.machines?.running > 0)) {
+            return "Computer idle — it’ll light up when this Worker starts a sandbox.";
         }
     } catch (_) { /* ignore */ }
+    return "Computer unavailable — couldn’t load a desktop frame.";
+}
+
+function clearComputerFrame(message) {
+    const mLive = document.getElementById("m-live-screen");
+    const sheetScreen = document.querySelector(".m-sheet-screen");
+    const empty = document.getElementById("m-sheet-empty");
+    if (mLive) {
+        mLive.removeAttribute("src");
+        mLive.hidden = true;
+    }
+    if (sheetScreen) sheetScreen.classList.remove("has-frame");
+    if (empty) {
+        empty.hidden = false;
+        if (message) empty.textContent = message;
+    }
 }
 
 function setPreviewOpen(open) {
@@ -674,8 +719,13 @@ window.OpenWorkerChat = {
     setTakeoverOpen: (v) => setTakeoverOpen(v),
     refreshActiveScreen: async () => {
         const w = workersCache.find((x) => x.id === activeWorkerId);
-        if (w?.preferred_machine_id) await refreshScreen(w.preferred_machine_id);
+        if (w?.preferred_machine_id) {
+            await refreshScreen(w.preferred_machine_id);
+            return;
+        }
+        clearComputerFrame(await computerUnavailableReason());
     },
+    clearComputerFrame,
     getActiveWorker: () => workersCache.find((x) => x.id === activeWorkerId) || null,
     getWorkers: () => workersCache.slice(),
     getSessionId: () => chatSessionId,

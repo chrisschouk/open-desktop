@@ -1,9 +1,18 @@
 // OpenDesktop Client - Digital Employee OS & Playbook Engine
 
-const API_BASE = "http://localhost:8000/api/v1";
-const WS_BASE = "ws://localhost:8000/ws";
-window.API_BASE = API_BASE;
-window.WS_BASE = WS_BASE;
+// Same-origin when served via demo proxy / public tunnel; localhost when developing locally.
+(() => {
+    const host = window.location.hostname;
+    const proto = window.location.protocol === "https:" ? "https" : "http";
+    const wsProto = window.location.protocol === "https:" ? "wss" : "ws";
+    const local = host === "localhost" || host === "127.0.0.1";
+    const API_BASE = local ? "http://localhost:8000/api/v1" : `${proto}://${window.location.host}/api/v1`;
+    const WS_BASE = local ? "ws://localhost:8000/ws" : `${wsProto}://${window.location.host}/ws`;
+    window.API_BASE = API_BASE;
+    window.WS_BASE = WS_BASE;
+})();
+const API_BASE = window.API_BASE;
+const WS_BASE = window.WS_BASE;
 
 let activeComputerId = null;
 let machines = [];
@@ -246,18 +255,21 @@ async function fetchEngineStatus() {
 function updateSetupBanner(health) {
     const banner = document.getElementById("setup-banner");
     const text = document.getElementById("setup-banner-text");
+    const bannerBtn = document.getElementById("btn-banner-api-key");
     if (!banner || !text) return;
     if (sessionStorage.getItem("opendesktop-banner-dismissed") === "1") {
         banner.hidden = true;
         return;
     }
     if (!health.api_key_configured) {
-        text.textContent = "No API key configured — add OPENROUTER_API_KEY to .env or paste your sk-or- key in API Key Settings.";
+        text.textContent = "No API key — paste your OpenRouter sk-or- key (DeepSeek V4 Flash only).";
+        if (bannerBtn) bannerBtn.textContent = "Add API Key";
         banner.hidden = false;
         return;
     }
     if (!health.docker?.available) {
-        text.textContent = "Docker is not available — sandbox automation requires Docker.";
+        text.textContent = "Docker is not available — sandbox automation requires Docker. You can still chat after setting an API key.";
+        if (bannerBtn) bannerBtn.textContent = "API Key";
         banner.hidden = false;
         return;
     }
@@ -278,12 +290,42 @@ function setupEventListeners() {
     if (btnTabOperator) btnTabOperator.addEventListener("click", () => setMainTab("operator"));
     if (btnTabDeveloper) btnTabDeveloper.addEventListener("click", () => setMainTab("developer"));
 
-    if (btnApiKeys) btnApiKeys.addEventListener("click", () => modalApi.classList.add("open"));
-    if (btnCloseModal) btnCloseModal.addEventListener("click", () => modalApi.classList.remove("open"));
+    function openApiModal() {
+        if (!modalApi) return;
+        modalApi.hidden = false;
+        modalApi.classList.add("open");
+        const input = document.getElementById("input-api-key");
+        if (input) setTimeout(() => input.focus(), 50);
+    }
+
+    function closeApiModal() {
+        if (!modalApi) return;
+        modalApi.classList.remove("open");
+        modalApi.hidden = true;
+    }
+
+    window.openApiModal = openApiModal;
+    window.closeApiModal = closeApiModal;
+
+    if (btnApiKeys) btnApiKeys.addEventListener("click", openApiModal);
+    if (btnCloseModal) btnCloseModal.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeApiModal();
+    });
+
+    if (modalApi) {
+        modalApi.addEventListener("click", (e) => {
+            if (e.target === modalApi) closeApiModal();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modalApi.classList.contains("open")) closeApiModal();
+        });
+    }
 
     const btnBannerKey = document.getElementById("btn-banner-api-key");
     if (btnBannerKey && modalApi) {
-        btnBannerKey.addEventListener("click", () => modalApi.classList.add("open"));
+        btnBannerKey.addEventListener("click", openApiModal);
     }
     const btnDismissBanner = document.getElementById("btn-dismiss-banner");
     if (btnDismissBanner) {
@@ -303,8 +345,21 @@ function setupEventListeners() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ api_key: keyVal })
             });
-            const data = await res.json();
-            if (data.status === "success") {
+            const raw = await res.text();
+            let data = null;
+            try {
+                data = raw ? JSON.parse(raw) : null;
+            } catch {
+                throw new Error(
+                    res.ok
+                        ? "Server returned a non-JSON page (stale tunnel URL?). Open the latest demo link and try again."
+                        : `Key save failed (HTTP ${res.status}). Open the latest demo link — old tunnel URLs expire.`
+                );
+            }
+            if (!res.ok) {
+                throw new Error((data && (data.detail || data.message)) || `HTTP ${res.status}`);
+            }
+            if (data && (data.status === "success" || data.status === "ok" || res.ok)) {
                 if (statusEl) {
                     statusEl.style.display = "block";
                     setTimeout(() => { statusEl.style.display = "none"; }, 2000);
@@ -312,6 +367,7 @@ function setupEventListeners() {
                 fetchEngineStatus();
                 return true;
             }
+            throw new Error((data && data.message) || "Unexpected response from server");
         } catch (e) {
             alert("Failed to save key: " + e.message);
         }
@@ -325,7 +381,7 @@ function setupEventListeners() {
         btnSaveKey.addEventListener("click", async (e) => {
             e.preventDefault();
             const ok = await saveKey(inputKey.value.trim(), keyStatus);
-            if (ok && modalApi) setTimeout(() => modalApi.classList.remove("open"), 1000);
+            if (ok) setTimeout(() => closeApiModal(), 600);
         });
     }
 
