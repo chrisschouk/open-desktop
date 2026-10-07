@@ -55,6 +55,18 @@ VISION_MODEL=anthropic/claude-3.5-sonnet
 
 OpenRouter routes to OpenAI, Anthropic, Google, etc. with one account — handy for indie budgets.
 
+### Default models (OpenRouter)
+
+```bash
+OPENROUTER_API_KEY=sk-or-v1-...
+
+# Both are set to DeepSeek V4 Flash when an OpenRouter key is applied
+CHAT_MODEL=deepseek/deepseek-v4-flash       # pennies per 100 messages, chat and browser
+VISION_MODEL=deepseek/deepseek-v4-flash      # desktop screenshots (needs sandbox)
+```
+
+With an OpenRouter key, chat and vision both use DeepSeek V4 Flash. Desktop automation (T2/T3) also needs a running sandbox (local Docker or [Hetzner remote](HETZNER.md)).
+
 ---
 
 ## Local Ollama (no cloud key)
