@@ -1,5 +1,6 @@
 """
 SQLite session and message store for OpenWorker chat.
+Sessions (chats) belong to Workers when worker_id is set.
 """
 import json
 import sqlite3
@@ -11,6 +12,8 @@ from typing import Any, Dict, List, Optional
 from .config import DATA_DIR
 
 DB_PATH = DATA_DIR / "sessions.db"
+
+MESSAGE_KINDS = ("text", "event", "widget", "artifact_ref", "computer_status")
 
 
 def _connect() -> sqlite3.Connection:
@@ -52,15 +55,34 @@ def init_db():
         cols = [r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()]
         if "channel_key" not in cols:
             conn.execute("ALTER TABLE sessions ADD COLUMN channel_key TEXT")
+        if "worker_id" not in cols:
+            conn.execute("ALTER TABLE sessions ADD COLUMN worker_id TEXT")
+        msg_cols = [r[1] for r in conn.execute("PRAGMA table_info(messages)").fetchall()]
+        if "kind" not in msg_cols:
+            conn.execute("ALTER TABLE messages ADD COLUMN kind TEXT NOT NULL DEFAULT 'text'")
 
 
-def create_session(persona_id: str = "openworker", channel_key: Optional[str] = None) -> dict:
+def create_session(
+    persona_id: str = "openworker",
+    channel_key: Optional[str] = None,
+    worker_id: Optional[str] = None,
+) -> dict:
     session_id = f"sess_{uuid.uuid4().hex[:12]}"
     now = time.time()
+    # Lazy default worker binding without circular import at module load
+    if worker_id is None:
+        try:
+            from .workers import DEFAULT_WORKER_ID, ensure_default_worker
+            ensure_default_worker()
+            worker_id = DEFAULT_WORKER_ID
+        except Exception:
+            worker_id = "wrk_openworker"
     with _connect() as conn:
         conn.execute(
-            "INSERT INTO sessions (id, persona_id, channel_key, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (session_id, persona_id, channel_key, "idle", now, now),
+            """INSERT INTO sessions
+               (id, persona_id, channel_key, status, worker_id, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (session_id, persona_id, channel_key, "idle", worker_id, now, now),
         )
         if channel_key:
             conn.execute(
@@ -111,14 +133,21 @@ def add_message(
     role: str,
     content: str,
     metadata: Optional[dict] = None,
+    kind: str = "text",
 ) -> dict:
+    if kind not in MESSAGE_KINDS:
+        kind = "text"
     msg_id = f"msg_{uuid.uuid4().hex[:12]}"
     now = time.time()
-    meta_json = json.dumps(metadata) if metadata else None
+    meta = dict(metadata) if metadata else {}
+    meta.setdefault("kind", kind)
+    meta_json = json.dumps(meta)
     with _connect() as conn:
         conn.execute(
-            "INSERT INTO messages (id, session_id, role, content, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (msg_id, session_id, role, content, meta_json, now),
+            """INSERT INTO messages
+               (id, session_id, role, content, metadata, kind, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (msg_id, session_id, role, content, meta_json, kind, now),
         )
         conn.execute("UPDATE sessions SET updated_at = ? WHERE id = ?", (now, session_id))
     return {
@@ -126,7 +155,8 @@ def add_message(
         "session_id": session_id,
         "role": role,
         "content": content,
-        "metadata": metadata,
+        "kind": kind,
+        "metadata": meta,
         "created_at": now,
     }
 
@@ -145,14 +175,24 @@ def get_messages(session_id: str, limit: int = 50) -> List[dict]:
         d = dict(row)
         if d.get("metadata"):
             d["metadata"] = json.loads(d["metadata"])
+        if not d.get("kind") and isinstance(d.get("metadata"), dict):
+            d["kind"] = d["metadata"].get("kind", "text")
+        elif not d.get("kind"):
+            d["kind"] = "text"
         result.append(d)
     return result
 
 
-def list_sessions(limit: int = 20) -> List[dict]:
+def list_sessions(limit: int = 20, worker_id: Optional[str] = None) -> List[dict]:
     with _connect() as conn:
-        rows = conn.execute(
-            "SELECT * FROM sessions ORDER BY updated_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
+        if worker_id:
+            rows = conn.execute(
+                "SELECT * FROM sessions WHERE worker_id = ? ORDER BY updated_at DESC LIMIT ?",
+                (worker_id, limit),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM sessions ORDER BY updated_at DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
     return [dict(r) for r in rows]

@@ -38,7 +38,7 @@ openworker orient
 curl -s localhost:8000/api/v1/agent/orient
 ```
 
-Returns health, machines, recent sessions, working count, hub summary, and `next` hints.
+Returns health, **workers** (roster + presence), machines, recent sessions, routines, artifacts, hub summary, and `next` hints.
 
 Optional dry-run before spending:
 
@@ -51,14 +51,49 @@ openworker plan "Research UK radio pluggers"
 
 ---
 
+## 3b. Workers (persistent agents)
+
+The primary product object is a **Worker**, not a chat. See [DESIGN_PRIMITIVES.md](DESIGN_PRIMITIVES.md).
+
+```bash
+openworker workers list
+curl -s localhost:8000/api/v1/workers
+```
+
+```http
+POST /api/v1/workers
+{"name": "Music PR", "avatar": "music", "role": "Outreach", "persona_ref": "openworker"}
+
+POST /api/v1/workers/{worker_id}/chats
+→ { "session": {…}, "worker": {…}, "greeting": "…" }
+
+POST /api/v1/chat
+{"message": "…", "worker_id": "wrk_openworker"}   # creates chat under Worker if no session_id
+
+GET /api/v1/workers/{id}/routines
+POST /api/v1/workers/{id}/routines
+{"name": "Morning briefing", "prompt": "…", "interval_seconds": 86400}
+
+POST /api/v1/routines/{id}/pause | /resume
+GET /api/v1/artifacts?worker_id=wrk_…
+POST /api/v1/groups
+{"name": "Acme launch", "worker_ids": ["wrk_coordinator","wrk_research"], "coordinator_id": "wrk_coordinator"}
+```
+
+Message `kind` values in transcripts: `text` | `event` | `widget` | `artifact_ref` | `computer_status`.
+
+Worker `presence`: `idle` | `thinking` | `working` | `waiting` | `blocked` | `done`.
+
+---
+
 ## 4. Session lifecycle (canonical agent loop)
 
 ### 4.1 Create or resume
 
 ```http
 POST /api/v1/sessions
-{"persona_id": "openworker"}
-→ { "session": { "id": "sess_…", "status": "idle" }, "greeting": "…" }
+{"persona_id": "openworker", "worker_id": "wrk_openworker"}
+→ { "session": { "id": "sess_…", "status": "idle", "worker_id": "wrk_…" }, "greeting": "…" }
 ```
 
 Resume via `session_id` on subsequent `POST /chat` calls.
@@ -143,7 +178,10 @@ Start: `python connectors/mcp_server.py`
 
 | Tool | Use when |
 |------|----------|
+| `openworker_orient` | Cold start — health, workers, machines, hub |
+| `openworker_plan` | Dry-run tier before spending |
 | `openworker_chat` | Default — full router + session |
+| `list_workers` | Roster + presence |
 | `list_sandboxes` | Orient on fleet |
 | `desktop_screenshot` | Debug vision only (expensive) |
 | `desktop_click` / `desktop_type` | Manual intervention / recovery |
@@ -155,6 +193,7 @@ Start: `python connectors/mcp_server.py`
 {
   "message": "Find 10 UK radio pluggers",
   "session_id": "sess_optional",
+  "worker_id": "wrk_openworker",
   "persona_id": "openworker"
 }
 ```

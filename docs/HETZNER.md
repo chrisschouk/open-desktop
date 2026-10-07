@@ -75,7 +75,7 @@ SANDBOX_IMAGE=opendesktop-sandbox:latest
 
 OPENROUTER_API_KEY=sk-or-v1-...
 CHAT_MODEL=deepseek/deepseek-v4-flash
-VISION_MODEL=google/gemini-2.0-flash-001
+VISION_MODEL=deepseek/deepseek-v4-flash
 ```
 
 Start the API:

@@ -25,6 +25,7 @@ Read in this order if you are an **AI agent**:
 
 | Doc | Purpose |
 |-----|---------|
+| [DESIGN_PRIMITIVES.md](DESIGN_PRIMITIVES.md) | Workers, chats, prompts, tools, artifacts — product language |
 | [AGENT_SYSTEM.md](AGENT_SYSTEM.md) | Abstraction tower, tiers, control loop, invariants |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Control vs compute plane, component map |
 | [AGENT_API.md](AGENT_API.md) | REST/MCP/CLI contracts |

@@ -87,12 +87,30 @@ MCP: `openworker_orient`, `openworker_plan` tools added.
 
 ---
 
+## Phase G — Worker-centric product model
+
+**Goal:** Organize the product around persistent **Workers** (Grok Bot design primitives), with API parity for the dashboard.
+
+| Item | Description |
+|------|-------------|
+| Design contract | [DESIGN_PRIMITIVES.md](DESIGN_PRIMITIVES.md) — five primitives, presence, computer levels |
+| `worker_id` | Persistent identity; sessions/chats owned by Workers |
+| Presence | `idle` / `thinking` / `working` / `waiting` / `blocked` / `done` on Worker + session |
+| Computer levels | Status → Preview → Takeover for each Worker’s sandbox |
+| Routines | Worker-owned schedules; runs land in Worker transcript |
+| Artifacts | Durable outputs + `artifact_ref` message kinds |
+| Roster UI | Dashboard default = Worker roster, not machine tabs |
+
+**Success metric:** `openworker orient` returns workers + presence; dashboard opens on a roster; Routine runs appear in transcript without a user prompt.
+
+---
+
 ## Non-goals (preserve coherence)
 
 - ❌ Duplicate routing in connectors
 - ❌ UI-only features without API parity
 - ❌ Nostr relay rewrite (integrate with Buzz instead)
-- ❌ Hidden state outside sessions/audit/machines
+- ❌ Hidden state outside workers/sessions/audit/machines/artifacts
 
 ---
 

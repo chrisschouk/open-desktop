@@ -3,6 +3,9 @@
 OpenWorker is the **reasoning and routing layer** of [OpenDesktop](../README.md).
 
 > **Agents:** Read [AGENT_SYSTEM.md](AGENT_SYSTEM.md) first. This page is a product summary.
+> **Design:** [DESIGN_PRIMITIVES.md](DESIGN_PRIMITIVES.md) — Workers, chats, prompts, tools, artifacts.
+
+The main object in the product is a **Worker** (persistent agent), not a chat history. Chats belong to Workers. Sandboxes are each Worker’s computer — glance via preview, or take over when needed.
 
 ---
 
@@ -32,19 +35,21 @@ All paths converge on `ChatService` — same semantics everywhere.
 
 ---
 
-## Session model
+## Worker + session model
 
-- `POST /api/v1/sessions` → create thread + greeting
-- `POST /api/v1/chat` → route message (respect `status: working` mutex)
+- `GET/POST /api/v1/workers` → roster; default Worker is seeded from the `openworker` persona
+- `POST /api/v1/workers/:id/chats` (or `POST /api/v1/sessions` with `worker_id`) → create chat + greeting
+- `POST /api/v1/chat` → route message (respect `status: working` mutex; presence updates on the Worker)
 - `GET /api/v1/sessions/:id` → poll until `idle`
+- `GET/POST /api/v1/workers/:id/routines` → standing work that can start without a prompt
 
 See [AGENT_API.md](AGENT_API.md) for the full loop.
 
 ---
 
-## Personas
+## Personas → Workers
 
-`personas/*.yaml` — default `openworker`. Tone only; routing unchanged.
+`personas/*.yaml` define tone and greeting. On startup, OpenDesktop ensures a default **Worker** (`wrk_openworker`) from the `openworker` persona. Additional Workers can share tools/skills while keeping separate memory and routines.
 
 ---
 
@@ -66,6 +71,7 @@ Thin adapters → `gateway.dispatch()`. See `connectors/`.
 
 ## See also
 
+- [DESIGN_PRIMITIVES.md](DESIGN_PRIMITIVES.md) — Workers, presence, computer levels
 - [AGENT_SYSTEM.md](AGENT_SYSTEM.md) — ontology
 - [ARCHITECTURE.md](ARCHITECTURE.md) — system map
 - [DEMO.md](DEMO.md) — music PR golden path
