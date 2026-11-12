@@ -1,6 +1,6 @@
 # OpenDesktop + OpenWorker
 
-OpenDesktop is the open source platform. **OpenWorker** is the conversational desktop agent that runs on top of it — persistent **Workers** with their own computers, not disposable chat sessions.
+OpenDesktop is the open source platform. **OpenWorker** is the conversational desktop agent that runs on top of it. Each **Worker** is persistent and has its own sandboxed computer, so it keeps its state between conversations.
 
 ## Quick start
 
@@ -8,7 +8,7 @@ OpenDesktop is the open source platform. **OpenWorker** is the conversational de
 git clone https://github.com/chrisschouk/open-desktop.git
 cd open-desktop
 cp .env.example .env
-# One OpenRouter key covers chat + desktop — see docs/API_KEYS.md
+# One OpenRouter key covers chat and desktop (see docs/API_KEYS.md)
 # OPENROUTER_API_KEY=sk-or-v1-...
 
 # Build sandbox image (first time only)
@@ -78,8 +78,8 @@ Music PR golden path: [docs/DEMO.md](docs/DEMO.md) · `./scripts/demo_music_pr.s
 
 ## Brand
 
-- **OpenDesktop** — platform & engine
-- **OpenWorker** — conversational agent
+- **OpenDesktop**: the platform and engine
+- **OpenWorker**: the conversational agent
 
 See [docs/BRAND.md](docs/BRAND.md).
 
@@ -111,7 +111,7 @@ See `.env.example` and [docs/API_KEYS.md](docs/API_KEYS.md). One OpenRouter key 
 
 | Variable | Purpose |
 |---|---|
-| `OPENROUTER_API_KEY` | **Recommended** — one key for chat + desktop |
+| `OPENROUTER_API_KEY` | Recommended. One key for chat and desktop |
 | `SANDBOX_MODE` | `local` (default) or `remote` |
 | `OPENDESKTOP_API_TOKEN` | Bearer auth for gateway/MCP when exposed |
 | `DEFAULT_PERSONA` | `openworker` (default) |
@@ -129,10 +129,10 @@ See `.env.example` and [docs/API_KEYS.md](docs/API_KEYS.md). One OpenRouter key 
 
 Built-in workflows in `playbooks/`:
 
-- `pb_web_research` — web research & synthesis
-- `pb_lead_gen_campaign` — multi-agent lead gen
-- `pb_music_pr_discovery` — music PR contact discovery
-- `pb_data_entry_rpa` — cross-app RPA
+- `pb_web_research`: web research and synthesis
+- `pb_lead_gen_campaign`: multi-agent lead generation
+- `pb_music_pr_discovery`: music PR contact discovery
+- `pb_data_entry_rpa`: cross-app data entry
 
 ## License
 
