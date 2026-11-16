@@ -20,3 +20,9 @@ FastAPI control plane (`server/`) for Docker desktop sandboxes plus the OpenWork
 - `venv/`, `.env` and `data/` are gitignored. Never commit them.
 - `SANDBOX_MODE` selects local Docker or remote Hetzner over SSH; set `SANDBOX_ENABLED=false` to fall back to browser research.
 - Compose maps `/var/run/docker.sock` into the server container.
+
+## Local preview links (Tailscale)
+
+Any time you give me a link to something running on this computer (a preview, a review page, a dashboard), give me a Tailscale link, never localhost. I work across several computers and my phone. Publish it with tailscale serve, open the link yourself to check it works, then send it.
+
+Keep this tailnet-only: use Tailscale Serve, never Funnel or another public tunnel. Check existing Serve routes before changing them; do not reset or overwrite unrelated services. Use the actual URL returned by Serve and verify the intended page opens there. If Tailscale, HTTPS setup, permissions or page verification is blocked, report that blocker rather than inventing a link or claiming success. Localhost is still fine as the internal proxy target, never as the link handed to Chris. The host and app must stay running, with both devices connected to the same tailnet.
